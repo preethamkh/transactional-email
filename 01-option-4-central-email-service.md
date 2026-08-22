@@ -146,9 +146,11 @@ Two distinct concerns; the POC implements the first and designs the second:
 
 So: the POC does not write to D365 (that needs an app registration + approval), but everything it logs is shaped to feed that write-back, and a thin spike can validate the Dataverse create-email contract before Phase 2.
 
-### Spike result (22 Aug, apc-uat) — write-back contract VALIDATED
+### Spike result (22 Aug, PROD org `physiocouncil.crm6` — see environment correction) — write-back contract VALIDATED
 
-Executed against the **apc-uat** environment (not production). Created one draft Email activity via the Dataverse Web API against the contact `Preetham.KH@physiocouncil.com.au` (`f4deec65-469f-4c37-8fbe-901107ec91a7`):
+Created one draft Email activity via the Dataverse Web API against the contact `Preetham.KH@physiocouncil.com.au`.
+
+> **Environment correction:** the connected organisation reports display-name `apc-uat`, but its URL is `https://physiocouncil.crm6.dynamics.com`, confirmed by the user to be **production**. The assumption that an `apc-uat`-style org name implied a sandbox was wrong — environment identity must always be verified from the URL. The user visually confirmed the timeline entry in their live Communication tab. Technically none of the findings change (draft creation is equally safe in either environment), but future CRM-side validation must target **DEV: `https://apc-dev.crm6.dynamics.com`** (or have the MCP connection repointed) before any further writes.
 
 | Contract element | Verified behaviour |
 |---|---|
@@ -157,7 +159,7 @@ Executed against the **apc-uat** environment (not production). Created one draft
 | Parties | Inline `email_activity_parties` array works: mask 1 = Sender (systemuser bind), mask 2 = To recipient; Owner/Regarding parties auto-created |
 | Recipient matching | Production webhook consumer resolves recipient email → contact (emailaddress1) before binding |
 
-Production notes captured from the spike: (1) use the standard Web API create which returns the new activity id in the response header — needed for idempotency keyed on `central_message_id` (store in a custom string field or subject token) so webhook retries don't duplicate timeline entries; (2) avoid bracket characters when filtering subjects via OData `contains` (cost us one failed lookup); (3) an S2S app registration with Email Create privilege replaces interactive credentials. Test record left in UAT labelled "[POC] … safe to delete".
+Production notes captured from the spike: (1) use the standard Web API create which returns the new activity id in the response header — needed for idempotency keyed on `central_message_id` (store in a custom string field or subject token) so webhook retries don't duplicate timeline entries; (2) avoid bracket characters when filtering subjects via OData `contains` (cost us one failed lookup); (3) an S2S app registration with Email Create privilege replaces interactive credentials. Test draft left in PROD labelled "[POC] … safe to delete" — deletion pending user confirmation; no other records were created or modified.
 
 Context observed in UAT while verifying: live D365-generated emails ("Payment received", "READY FOR PROCESSING…", some stuck at statuscode 6 *Pending Send*) confirm flow-based email logging exists today and would be replaced/unified by this service.
 
