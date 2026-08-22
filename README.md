@@ -42,7 +42,17 @@ Located in [`source/`](source/):
 
 - [x] Analysis of options paper vs actual architecture
 - [x] Option 4 design documented
-- [x] Three-track POC plan + comparison framework
+- [x] Two-branch POC strategy + comparison framework
+- [x] POC branches scaffolded, building, tested (local-only)
 - [ ] Accounts/access requested (SendGrid scoped key, Mailchimp trial, Mandrill decision)
-- [ ] POC branches scaffolded (local-only, never pushed)
-- [ ] POCs executed, comparison demo prepared
+- [ ] POCs executed against live accounts, comparison demo prepared
+
+## Addendum (22 Aug 2026) — Accreditation repo findings
+
+The Accreditation repo (`C:\Dev\Accreditation`, docs pack in its `docs/` folder) was code-verified:
+
+- **Zero D365 references.** The separated portal is SQL Server/EF Core (115 migrations), Auth0, ShareIt.Library. The claim in `source/capability-analysis.md` §2.2 that "accreditation data IS in D365" describes the **legacy monolith only** and must not be used in the meeting — for the new portal the paper's "accreditation insight stays in the Portal" premise is literally true.
+- **Email sending is registered but unused** (`ISendGridService` at `Program.cs:70`, all consumers commented out). No template store migrated. The new portal is the **cleanest first adopter** of Option 4 — nothing to migrate.
+- `EmailCatalogue` is a per-association email *address* directory (autocomplete), not a template store — don't conflate it with template governance.
+
+Net effect on the decision: **strengthens Option 4** (serves both portals, no accreditation migration cost, aligns with the Portal-as-system-of-record decision).
