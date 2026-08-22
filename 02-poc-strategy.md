@@ -24,7 +24,7 @@ That request maps to **Branch 1** below. A senior-architecture review concluded 
 
 | Branch (local only) | Validates | Maps to | Cost |
 |---|---|---|---|
-| `poc/email-option2-mailchimp` | Mailchimp template storage/retrieval via API; merge-tag semantics; logging; send-via-SendGrid fallback; pricing/gotcha findings | Option 2 (+ Option 1's sending question, documented) | $0 (trial account) |
+| `poc/email-option2-mailchimp` | Mailchimp template storage/retrieval via API; merge-tag semantics; logging; **send via Mandrill demo tier AND via SendGrid fallback**; pricing/gotcha findings | Option 2 (+ Option 1's sending question — now testable, see update below) | $0 (trial + Mandrill demo tier) |
 | `poc/email-option4-central-service` | Thin central API: one endpoint, template registry, per-system keys, activity log, webhook receiver, Swagger/OpenAPI demo; SendGrid Dynamic Templates end-to-end | Option 4 + incumbent (SendGrid) baseline | $0 (existing account, free tier limits fine) |
 
 Both share one conceptual harness: *list templates → get template → render with data → send → log → read status*. Branch 2 hosts the same operations behind HTTP.
@@ -39,6 +39,16 @@ Both share one conceptual harness: *list templates → get template → render w
 6. Findings: pricing sheet + gotchas checklist (§7) + explicit "Mandrill send/reporting not testable without paid block" record.
 
 **Exit criteria:** retrieval demonstrated or definitively blocked (with cause); pipeline demoed end-to-end; findings complete.
+
+### Update (22 Aug): Mandrill demo tier CONFIRMED — real send path now in scope
+
+The Mailchimp account already exposes the Transactional (Mandrill) product with a free/demo tier (`transactional-mailchimp.png`). Consequences:
+
+- The earlier "Mandrill = document-only / needs ~US$20 block" stance is superseded. Branch 1 now includes a genuine Mailchimp→Mandrill send path: retrieved HTML + `global_merge_vars`, `merge_language=mailchimp`, server-side rendering.
+- **Demo-tier limits:** ~25 emails/hour outbound, 100/hour inbound, and — critically — **recipients must be at an authenticated domain** (no external domains).
+- **Prerequisite:** complete *Confirm your domain* + *Authenticate your domain* (SPF/DKIM DNS records). This requires DNS access → new manager/IT ask (doc 03 §1a). A gmail-based account cannot authenticate `gmail.com`, so the "gmail trial route" cannot deliver to external/gmail recipients.
+- **Comparison finding unlocked:** Mandrill demo requires full domain authentication before ANY send; SendGrid permits single-sender verification by confirmation click alone. Record this asymmetry in FINDINGS/scorecard.
+- Reporting evidence: once sends succeed, Mandrill-side activity/outbound stats can be captured alongside our JSONL operational log.
 
 ## 4. Branch 2 — Central Email Service (Option 4) Scope
 
@@ -92,7 +102,7 @@ Score 1–5 per criterion; weights sum to 100. Options 1/3 rows completed from d
 - [ ] Mailchimp template builder type affects `GET /templates/{id}` output (classic vs newer builders return different markup quality outside Mailchimp)
 - [ ] Mailchimp marketing templates ≠ Mandrill templates — two stores under one brand (split-brain problem, evidenced)
 - [ ] Merge tags render at **send time** in Mandrill, not retrieval
-- [ ] Mandrill requires paid Standard + purchased blocks; confirm any trial/test allowance
+- [x] ~~Mandrill requires paid Standard + purchased blocks~~ **RESOLVED:** demo tier exists (25 sends/hr, same-domain-only recipients) — see update in §3
 - [ ] SendGrid free/current tier limits sufficient for POC; confirm Dynamic Templates + event webhook availability
 - [ ] SendGrid Email Activity search/history tier requirements — document what's visible instead
 - [ ] Domain authentication (SPF/DKIM/DMARC) status on the SendGrid account

@@ -39,6 +39,7 @@ cd poc/email-option2-mailchimp
 dotnet restore
 dotnet user-secrets init --project MailchimpPoc.csproj
 dotnet user-secrets set "Mailchimp:ApiKey" "xxxxxxxxxx-us21" --project MailchimpPoc.csproj   # from trial account
+dotnet user-secrets set "Mandrill:ApiKey" "xxxxxxxxxxxxxx" --project MailchimpPoc.csproj     # Transactional > Settings > API keys (demo tier)
 dotnet user-secrets set "SendGrid:ApiKey" "SG.xxxxxxxx" --project MailchimpPoc.csproj        # from scoped key (Monday)
 dotnet user-secrets set "Poc:ToEmail" "you@apc.gov.au" --project MailchimpPoc.csproj
 ```
@@ -55,8 +56,11 @@ Menu options:
 1. List templates (Mailchimp API)
 2. Get template HTML by ID → prints first 500 chars, saves full HTML to `logs/template-{id}.html`
 3. Render sample data into merge tags (`*|FNAME|*` → `Jane`) — client-side preview only
-4. **Full pipeline**: get template → render → send via SendGrid → log everything
-5. Exit
+4. **Full pipeline via SendGrid**: get template → render locally → send via SendGrid → log everything
+5. **Full pipeline via Mandrill**: get template → send RAW HTML + `global_merge_vars` (`merge_language=mailchimp`) → **Mandrill renders server-side** → returns per-recipient status/reject_reason
+6. Exit
+
+Mandrill prerequisites (demo tier): Transactional → *Create API key*; *Confirm your domain*; *Authenticate your domain* (SPF/DKIM DNS — IT ask). Sends are rejected until authentication completes, and only deliver to recipients at that authenticated domain (gmail/external addresses will be rejected — capture the `reject_reason` as evidence). The selftest pings Mandrill (`PONG!`) when the key is set, so you can validate the key before DNS is done.
 
 Every operation appends a JSONL line to `logs/poc-log-yyyyMMdd.jsonl`: `{ts, op, target, status, latencyMs, error}` — this is your "logging vs SendGrid" evidence.
 
@@ -118,6 +122,8 @@ Run a tunnel (`ngrok http 5080`) → add endpoint `https://<tunnel>/api/v1/event
 | SendGrid 403 `sender identity not verified` | Unverified From address | Verify sender in UI; match `templates.json` branding |
 | SendGrid 400 `template id not valid` | Placeholder ID not replaced | Edit `templates.json` |
 | SendGrid 403 on send with correct key | Key lacks Mail Send scope | Regenerate key with scopes from doc 03 |
+| Mandrill status `rejected`, reason `unsigned`/domain error | Domain not authenticated yet (demo tier rule) | Complete Confirm + Authenticate domain steps; verify recipient is at the authenticated domain |
+| Mandrill rejects gmail/external recipient | Demo tier: recipients must be at authenticated domain | Expected behaviour — record reject_reason in FINDINGS as comparison evidence |
 | Port 5080 busy | Another process | `dotnet run --project src -- --urls http://localhost:5090` |
 | Tests fail on first run | Stale obj/ from branch switches | `git clean -xdn` to inspect, then `git clean -xdf` inside the poc folder only |
 

@@ -137,6 +137,15 @@ Package and API are two skins over one small core. This also avoids repeating th
 - Deliverability depends on SPF/DKIM/DMARC → already sending via SendGrid in prod; verify domain auth status as a POC checkbox
 - Governance workflow is manual at first → acceptable for 31 templates; add UI only if proven necessary
 
+## 6b. Logging Model — Operational Log vs Customer History
+
+Two distinct concerns; the POC implements the first and designs the second:
+
+1. **Operational log** (built in the POC): every API operation — caller, template, status, latency — plus provider webhook events. JSONL/activity endpoint now, SQL later. Purpose: debugging, audit, FR-003 foundation.
+2. **Customer-visible communication history** (production, Phase 2): what staff see on a **D365 Contact → Communication → Timeline** ("Communications Sent"). Current state already shows assessment emails there from legacy senders ("<Assessment>", "No Reply") with `{!User:First Name;}` merge syntax — evidence that D365-side templates and some flow-based logging exist today. Under Option 4 the central service becomes the *single* component performing this write-back: recipient email → contact match → create Email activity via Dataverse Web API (app registration/S2S), batched/async from the webhook consumer. Accreditation events route to the Accreditation Portal DB instead, per the agreed business decision.
+
+So: the POC does not write to D365 (that needs an app registration + approval), but everything it logs is shaped to feed that write-back, and a thin spike can validate the Dataverse create-email contract before Phase 2.
+
 ## 7. Migration Roadmap (Post-POC, Indicative)
 
 1. **Foundation (2–3 wks):** central service + SendGrid provider + registry + activity log + tests; facade `ISendGridService` implemented
