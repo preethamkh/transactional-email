@@ -5,6 +5,7 @@ namespace MailchimpPoc;
 public sealed record PocSettings(
     string? MailchimpApiKey,
     string? SendGridApiKey,
+    string? MandrillApiKey,
     string? ToEmail,
     string LogsDirectory)
 {
@@ -15,6 +16,7 @@ public sealed record PocSettings(
         return new PocSettings(
             configuration[SettingKeys.MailchimpApiKey],
             configuration[SettingKeys.SendGridApiKey],
+            configuration[SettingKeys.MandrillApiKey],
             configuration[SettingKeys.ToEmail],
             logsDirectory);
     }
@@ -24,5 +26,6 @@ public static class SettingKeys
 {
     public const string MailchimpApiKey = "Mailchimp:ApiKey";
     public const string SendGridApiKey = "SendGrid:ApiKey";
+    public const string MandrillApiKey = "Mandrill:ApiKey";
     public const string ToEmail = "Poc:ToEmail";
 }

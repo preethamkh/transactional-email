@@ -16,8 +16,10 @@ Fill every row during execution. Redact keys. Copy exact error bodies where rele
 
 - [ ] `GET /templates/{id}` returned clean reusable HTML for the chosen builder type? Notes:
 - [ ] Marketing templates vs Mandrill templates are separate stores — evidenced by (docs URL / response field):
-- [ ] Merge tags render at send time (Mandrill), not retrieval — evidence:
-- [ ] Mandrill licensing facts (plan requirement, block size, price, any trial allowance):
+- [ ] Merge tags render at send time (Mandrill), not retrieval — evidence: menu option 5 sends RAW html + global_merge_vars; compare rendered email vs raw
+- [x] RESOLVED 22 Aug: Mailchimp account exposes Mandrill **demo tier** (see transactional-mailchimp.png): ~25 sends/hr, 100 inbound/hr, recipients restricted to authenticated domain. Paid block no longer required for a real send test.
+- [ ] Domain confirmation/authentication completed? DNS records added by whom, when:
+- [ ] Gmail/public-provider recipients rejected? Capture exact reject_reason:
 - [ ] Any API rate limits hit:
 
 ## Operations log summary

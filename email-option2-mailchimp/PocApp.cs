@@ -40,7 +40,8 @@ public static class PocApp
                     case "2": await GetTemplateAsync(settings, log); break;
                     case "3": RenderSample(); break;
                     case "4": await FullPipelineAsync(settings, log); break;
-                    case "5": return 0;
+                    case "5": await FullPipelineViaMandrillAsync(settings, log); break;
+                    case "6": return 0;
                     default: Console.WriteLine("Unknown option."); break;
                 }
             }
@@ -57,14 +58,16 @@ public static class PocApp
         Console.WriteLine();
         Console.WriteLine("=== Mailchimp Template POC (Option 2 validation) ===");
         Console.WriteLine($"Mailchimp key : {Describe(settings.MailchimpApiKey)}");
+        Console.WriteLine($"Mandrill key  : {Describe(settings.MandrillApiKey)}");
         Console.WriteLine($"SendGrid key  : {Describe(settings.SendGridApiKey)}");
         Console.WriteLine($"Recipient     : {settings.ToEmail ?? "(not set)"}");
         Console.WriteLine();
         Console.WriteLine(" 1. List templates            (Mailchimp API)");
         Console.WriteLine(" 2. Get template HTML by ID   (saved to logs/)");
         Console.WriteLine(" 3. Render sample merge tags  (offline proof)");
-        Console.WriteLine(" 4. FULL PIPELINE             (get -> render -> send via SendGrid)");
-        Console.WriteLine(" 5. Exit");
+        Console.WriteLine(" 4. FULL PIPELINE via SENDGRID (get -> render -> send)");
+        Console.WriteLine(" 5. FULL PIPELINE via MANDRILL (get -> server-side merge render -> send)");
+        Console.WriteLine(" 6. Exit");
         Console.Write("Select: ");
     }
 
@@ -81,6 +84,15 @@ public static class PocApp
         var rendered = TemplateRenderer.Render(TemplateRenderer.SampleTemplateHtml, TemplateRenderer.SampleMergeData);
         Console.WriteLine($"Offline merge render works   : {rendered.Contains("Jane", StringComparison.Ordinal)}");
         await log.WriteAsync("selftest", "offline-render", "success", 0);
+
+        if (!string.IsNullOrWhiteSpace(settings.MandrillApiKey))
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var mandrill = new MandrillApiClient(settings.MandrillApiKey);
+            var ping = await mandrill.PingAsync();
+            Console.WriteLine($"Mandrill ping                : {(ping.IsSuccess ? "PONG (key valid)" : $"FAILED HTTP {(int)ping.StatusCode}")} ({sw.ElapsedMilliseconds} ms)");
+            await log.WriteAsync("selftest", "mandrill-ping", ping.IsSuccess ? "success" : $"http-{(int)ping.StatusCode}", sw.ElapsedMilliseconds, ping.IsSuccess ? null : ping.Body);
+        }
 
         Console.WriteLine("Self test complete. Add API keys via 'dotnet user-secrets' to run live operations.");
         return 0;
@@ -184,6 +196,54 @@ public static class PocApp
         Console.WriteLine($"SendGrid send: {(sent.IsSuccess ? "SUCCESS" : $"FAILED {(int)sent.StatusCode}")} in {sw.ElapsedMilliseconds} ms");
         if (!sent.IsSuccess) Console.WriteLine(sent.ErrorBody);
         await log.WriteAsync("send-via-sendgrid", subject, sent.IsSuccess ? "success" : $"http-{(int)sent.StatusCode}", sw.ElapsedMilliseconds, sent.ErrorBody);
+    }
+
+    private static async Task FullPipelineViaMandrillAsync(PocSettings settings, JsonLinesLogger log)
+    {
+        if (!EnsureConfigured(settings.MailchimpApiKey, "Mailchimp:ApiKey")) return;
+        if (!EnsureConfigured(settings.MandrillApiKey, "Mandrill:ApiKey")) return;
+        if (!EnsureConfigured(settings.ToEmail, "Poc:ToEmail")) return;
+
+        Console.Write("Template id (blank = built-in sample): ");
+        var id = Console.ReadLine()?.Trim();
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        string html;
+        string subject;
+
+        if (string.IsNullOrEmpty(id))
+        {
+            subject = "[POC] Sample template (Mandrill)";
+            html = TemplateRenderer.SampleTemplateHtml;
+        }
+        else
+        {
+            var mc = new MailchimpApiClient(settings.MailchimpApiKey!);
+            var (ok, status, body) = await mc.GetAsyncAsync($"/templates/{Uri.EscapeDataString(id)}");
+            Console.WriteLine($"Mailchimp HTTP {(int)status} in {sw.ElapsedMilliseconds} ms");
+            await log.WriteAsync("get-template", id, ok ? "success" : $"http-{(int)status}", sw.ElapsedMilliseconds, ok ? null : body);
+            if (!ok)
+            {
+                Console.WriteLine(body);
+                return;
+            }
+            using var doc = JsonDocument.Parse(body);
+            html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() ?? string.Empty : string.Empty;
+            subject = doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? subjectFallback : subjectFallback;
+        }
+
+        // Deliberately NOT pre-rendered: Mandrill renders *|TAG|* server-side (merge_language=mailchimp),
+        // demonstrating the true Option 2 flow where retrieved HTML goes out with data attached.
+        var mandrill = new MandrillApiClient(settings.MandrillApiKey!);
+        sw.Restart();
+        var sent = await mandrill.SendHtmlAsync(settings.ToEmail!, "Transactional Email POC", subject, html, settings.ToEmail!, TemplateRenderer.SampleMergeData);
+        Console.WriteLine($"Mandrill send: {(sent.IsSuccess ? $"SUCCESS ({sent.Status})" : $"FAILED ({sent.Status})")} in {sw.ElapsedMilliseconds} ms");
+        if (!sent.IsSuccess)
+        {
+            Console.WriteLine($"Reject reason: {sent.RejectReason}");
+            Console.WriteLine("Hint: demo tier only delivers to recipients at an AUTHENTICATED domain (SPF/DKIM).");
+        }
+        await log.WriteAsync("send-via-mandrill", subject, sent.IsSuccess ? sent.Status : $"rejected:{sent.RejectReason}", sw.ElapsedMilliseconds, sent.RejectReason);
     }
 
     private const string subjectFallback = "[POC] Mailchimp template";
