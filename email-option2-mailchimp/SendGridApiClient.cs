@@ -17,13 +17,13 @@ public sealed class SendGridApiClient
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }
 
-    public async Task<SendResult> SendHtmlAsync(string subject, string html, string toEmail)
+    public async Task<SendResult> SendHtmlAsync(string subject, string html, string toEmail, string fromEmail)
     {
         var payload = new
         {
             personalizations = new[] { new { to = new[] { new { email = toEmail } } } },
             subject,
-            from = new { email = toEmail, name = "Transactional Email POC" },
+            from = new { email = fromEmail, name = "Transactional Email POC" },
             content = new[]
             {
                 new { type = "text/plain", value = ToPlainText(html) },

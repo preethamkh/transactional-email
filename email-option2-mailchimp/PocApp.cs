@@ -29,6 +29,12 @@ public static class PocApp
             return 0;
         }
 
+        if (args.Any(a => a.Equals("--mandrill", StringComparison.OrdinalIgnoreCase)))
+        {
+            await FullPipelineViaMandrillAsync(settings, log);
+            return 0;
+        }
+
         return await MenuLoopAsync(settings, log);
     }
 
@@ -67,6 +73,7 @@ public static class PocApp
         Console.WriteLine($"Mandrill key  : {Describe(settings.MandrillApiKey)}");
         Console.WriteLine($"SendGrid key  : {Describe(settings.SendGridApiKey)}");
         Console.WriteLine($"Recipient     : {settings.ToEmail ?? "(not set)"}");
+        Console.WriteLine($"From email    : {settings.FromEmail ?? "(defaults to no-reply@...)"}");
         Console.WriteLine();
         Console.WriteLine(" 1. List templates            (Mailchimp API)");
         Console.WriteLine(" 2. Get template HTML by ID   (saved to logs/)");
@@ -198,7 +205,7 @@ public static class PocApp
         var sender = new SendGridApiClient(settings.SendGridApiKey!);
         var rendered = TemplateRenderer.Render(html, TemplateRenderer.SampleMergeData);
         sw.Restart();
-        var sent = await sender.SendHtmlAsync(subject, rendered, settings.ToEmail!);
+        var sent = await sender.SendHtmlAsync(subject, rendered, settings.ToEmail!, settings.FromEmail!);
         Console.WriteLine($"SendGrid send: {(sent.IsSuccess ? "SUCCESS" : $"FAILED {(int)sent.StatusCode}")} in {sw.ElapsedMilliseconds} ms");
         if (!sent.IsSuccess) Console.WriteLine(sent.ErrorBody);
         await log.WriteAsync("send-via-sendgrid", subject, sent.IsSuccess ? "success" : $"http-{(int)sent.StatusCode}", sw.ElapsedMilliseconds, sent.ErrorBody);
@@ -242,7 +249,13 @@ public static class PocApp
         // demonstrating the true Option 2 flow where retrieved HTML goes out with data attached.
         var mandrill = new MandrillApiClient(settings.MandrillApiKey!);
         sw.Restart();
-        var sent = await mandrill.SendHtmlAsync(settings.ToEmail!, "Transactional Email POC", subject, html, settings.ToEmail!, TemplateRenderer.SampleMergeData);
+        var sent = await mandrill.SendHtmlAsync(
+            settings.FromEmail!,
+            "Transactional Email POC",
+            subject,
+            html,
+            settings.ToEmail!,
+            TemplateRenderer.SampleMergeData);
         Console.WriteLine($"Mandrill send: {(sent.IsSuccess ? $"SUCCESS ({sent.Status})" : $"FAILED ({sent.Status})")} in {sw.ElapsedMilliseconds} ms");
         if (!sent.IsSuccess)
         {

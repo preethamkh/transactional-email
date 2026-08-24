@@ -11,11 +11,14 @@ dotnet restore
 dotnet user-secrets init --project MailchimpPoc.csproj
 dotnet user-secrets set "Mailchimp:ApiKey" "<key-datacenter>" --project MailchimpPoc.csproj
 dotnet user-secrets set "SendGrid:ApiKey"  "<SG.xxxx>"        --project MailchimpPoc.csproj
+dotnet user-secrets set "Mandrill:ApiKey"  "<md-xxxx>"        --project MailchimpPoc.csproj
+dotnet user-secrets set "Poc:FromEmail"    "no-reply@transactional-dev.physiocouncil.com.au" --project MailchimpPoc.csproj
 dotnet user-secrets set "Poc:ToEmail"      "you@example.org"  --project MailchimpPoc.csproj
 
-dotnet run --project MailchimpPoc.csproj -- selftest   # works without keys (offline proof)
-dotnet run --project MailchimpPoc.csproj -- --sendgrid  # sends a sample email via SendGrid to Poc:ToEmail (no menu)
-dotnet run --project MailchimpPoc.csproj               # interactive menu
+dotnet run --project MailchimpPoc.csproj -- selftest    # works without keys (offline proof)
+dotnet run --project MailchimpPoc.csproj -- --sendgrid  # sends via SendGrid from Poc:FromEmail to Poc:ToEmail
+dotnet run --project MailchimpPoc.csproj -- --mandrill  # sends via Mandrill from Poc:FromEmail to Poc:ToEmail
+dotnet run --project MailchimpPoc.csproj                # interactive menu
 ```
 
 ## What each menu option proves
