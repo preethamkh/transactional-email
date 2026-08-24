@@ -17,7 +17,7 @@ public sealed class MailchimpApiClient
     public MailchimpApiClient(string apiKey)
     {
         var (token, datacenter) = SplitApiKey(apiKey);
-        var baseUrl = $"https://{datacenter}.api.mailchimp.com/3.0";
+        var baseUrl = $"https://{datacenter}.api.mailchimp.com/3.0/";
         _client.BaseAddress = new Uri(baseUrl);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"anyuser:{token}")));
@@ -25,7 +25,8 @@ public sealed class MailchimpApiClient
 
     public async Task<ApiResult> GetAsyncAsync(string relativeUrl)
     {
-        using var response = await _client.GetAsync(relativeUrl);
+        var normalized = NormalizeUrl(relativeUrl);
+        using var response = await _client.GetAsync(normalized);
         var body = await response.Content.ReadAsStringAsync();
         return new ApiResult(response.IsSuccessStatusCode, response.StatusCode, body);
     }
@@ -41,5 +42,12 @@ public sealed class MailchimpApiClient
         }
 
         return (apiKey[..separatorIndex], apiKey[(separatorIndex + 1)..]);
+    }
+
+    private static string NormalizeUrl(string relativeUrl)
+    {
+        // HttpClient combines BaseAddress (with trailing /) + relativeUrl.
+        // Strip any leading slash to keep the path under /3.0/.
+        return relativeUrl.TrimStart('/');
     }
 }

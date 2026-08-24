@@ -25,13 +25,13 @@ public static class PocApp
 
         if (args.Any(a => a.Equals("--sendgrid", StringComparison.OrdinalIgnoreCase)))
         {
-            await FullPipelineAsync(settings, log);
+            await FullPipelineAsync(settings, log, AssessmentBookedTemplateId);
             return 0;
         }
 
         if (args.Any(a => a.Equals("--mandrill", StringComparison.OrdinalIgnoreCase)))
         {
-            await FullPipelineViaMandrillAsync(settings, log);
+            await FullPipelineViaMandrillAsync(settings, log, AssessmentBookedTemplateId);
             return 0;
         }
 
@@ -168,22 +168,22 @@ public static class PocApp
         Console.WriteLine("this is a client-side preview demonstrating tag semantics only.");
     }
 
-    private static async Task FullPipelineAsync(PocSettings settings, JsonLinesLogger log)
+    private const string AssessmentBookedTemplateId = "10128760";
+
+    private static async Task FullPipelineAsync(PocSettings settings, JsonLinesLogger log, string templateId = null)
     {
         if (!EnsureConfigured(settings.MailchimpApiKey, "Mailchimp:ApiKey")) return;
         if (!EnsureConfigured(settings.SendGridApiKey, "SendGrid:ApiKey")) return;
         if (!EnsureConfigured(settings.ToEmail, "Poc:ToEmail")) return;
 
-        Console.Write("Template id (blank = built-in sample): ");
-        var id = Console.ReadLine()?.Trim();
-
+        var id = templateId ?? PromptTemplateId();
         var sw = System.Diagnostics.Stopwatch.StartNew();
         string html;
         string subject;
 
         if (string.IsNullOrEmpty(id))
         {
-            subject = "[POC] Sample template";
+            subject = "[POC] Assessment Booked (SendGrid)";
             html = TemplateRenderer.SampleTemplateHtml;
         }
         else
@@ -211,22 +211,20 @@ public static class PocApp
         await log.WriteAsync("send-via-sendgrid", subject, sent.IsSuccess ? "success" : $"http-{(int)sent.StatusCode}", sw.ElapsedMilliseconds, sent.ErrorBody);
     }
 
-    private static async Task FullPipelineViaMandrillAsync(PocSettings settings, JsonLinesLogger log)
+    private static async Task FullPipelineViaMandrillAsync(PocSettings settings, JsonLinesLogger log, string templateId = null)
     {
         if (!EnsureConfigured(settings.MailchimpApiKey, "Mailchimp:ApiKey")) return;
         if (!EnsureConfigured(settings.MandrillApiKey, "Mandrill:ApiKey")) return;
         if (!EnsureConfigured(settings.ToEmail, "Poc:ToEmail")) return;
 
-        Console.Write("Template id (blank = built-in sample): ");
-        var id = Console.ReadLine()?.Trim();
-
+        var id = templateId ?? PromptTemplateId();
         var sw = System.Diagnostics.Stopwatch.StartNew();
         string html;
         string subject;
 
         if (string.IsNullOrEmpty(id))
         {
-            subject = "[POC] Sample template (Mandrill)";
+            subject = "[POC] Assessment Booked (Mandrill)";
             html = TemplateRenderer.SampleTemplateHtml;
         }
         else
@@ -241,13 +239,29 @@ public static class PocApp
                 return;
             }
             using var doc = JsonDocument.Parse(body);
-            html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() ?? string.Empty : string.Empty;
             subject = doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? subjectFallback : subjectFallback;
+            html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() : null;
+            // Multichannel/drag-and-drop templates don't expose raw HTML via /templates.
+            // Fall back to the Assessment Booked sample so merge-tag rendering is still demonstrated.
+            if (string.IsNullOrEmpty(html))
+            {
+                Console.WriteLine("Template HTML not returned by API (multichannel). Using Assessment Booked sample.");
+                html = TemplateRenderer.AssessmentBookedSampleHtml;
+            }
         }
+
+        var templateName = string.IsNullOrEmpty(id) ? "Sample template" : subject;
+        Console.WriteLine($"Using template: {templateName}");
+        Console.WriteLine($"From: {settings.FromEmail}  To: {settings.ToEmail}");
+        Console.WriteLine($"Using template: {templateName}");
+        Console.WriteLine($"From: {settings.FromEmail}  To: {settings.ToEmail}");
 
         // Deliberately NOT pre-rendered: Mandrill renders *|TAG|* server-side (merge_language=mailchimp),
         // demonstrating the true Option 2 flow where retrieved HTML goes out with data attached.
         var mandrill = new MandrillApiClient(settings.MandrillApiKey!);
+        var mergeData = string.Equals(id, AssessmentBookedTemplateId, StringComparison.Ordinal)
+            ? TemplateRenderer.AssessmentBookedMergeData
+            : TemplateRenderer.SampleMergeData;
         sw.Restart();
         var sent = await mandrill.SendHtmlAsync(
             settings.FromEmail!,
@@ -255,7 +269,7 @@ public static class PocApp
             subject,
             html,
             settings.ToEmail!,
-            TemplateRenderer.SampleMergeData);
+            mergeData);
         Console.WriteLine($"Mandrill send: {(sent.IsSuccess ? $"SUCCESS ({sent.Status})" : $"FAILED ({sent.Status})")} in {sw.ElapsedMilliseconds} ms");
         if (!sent.IsSuccess)
         {
@@ -273,6 +287,12 @@ public static class PocApp
         Console.WriteLine($"Missing configuration '{settingKey}'. Set it via:");
         Console.WriteLine($"  dotnet user-secrets set \"{settingKey}\" \"<value>\" --project MailchimpPoc.csproj");
         return false;
+    }
+
+    private static string PromptTemplateId()
+    {
+        Console.Write("Template id (blank = built-in sample): ");
+        return Console.ReadLine()?.Trim() ?? string.Empty;
     }
 
     private static string Sanitise(string id) => new(id.Where(char.IsLetterOrDigit).ToArray());
