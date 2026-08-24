@@ -1,0 +1,21 @@
+@mandrillKey = abc123
+@email = preetham@example.com
+
+###
+POST https://mandrillapp.com/api/1.0/messages/send.json
+Content-Type: application/json
+ 
+{
+    "key": {{mandrillKey}},
+    "message": {
+    "from_email": {{email}},
+    "to": [
+        {
+        "email": {{email}},
+        "type": "to"
+        }
+    ],
+    "subject": "POC Test",
+    "text": "Sending a test email using Mandrill API"
+    }
+}
