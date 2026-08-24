@@ -1,21 +1,29 @@
-@mandrillKey = abc123
-@email = preetham@example.com
+@mandrillKey = "md-AqbvmlgwdHpbamB91M_zoQ"
+@to = "preetham.kh@physiocouncil.com.au"
 
-###
+### Ping (validates the key itself)
+POST https://mandrillapp.com/api/1.0/users/ping2.json
+Content-Type: application/json
+
+{"key":"{{mandrillKey}}"}
+
+### Send (will return rejected/unsigned until a domain is authenticated)
 POST https://mandrillapp.com/api/1.0/messages/send.json
 Content-Type: application/json
- 
+
 {
-    "key": {{mandrillKey}},
+    "key": "{{mandrillKey}}",
     "message": {
-    "from_email": {{email}},
-    "to": [
-        {
-        "email": {{email}},
-        "type": "to"
-        }
-    ],
-    "subject": "POC Test",
-    "text": "Sending a test email using Mandrill API"
+        "from_email": "{{to}}",
+        "to": [{ "email": "{{to}}", "type": "to" }],
+        "subject": "POC Test",
+        "text": "Sending a test email using Mandrill API",
+        "merge_language": "mailchimp"
     }
 }
+
+### List Mandrill templates (separate from Mailchimp marketing templates)
+POST https://mandrillapp.com/api/1.0/templates/list.json
+Content-Type: application/json
+
+{"key":"{{mandrillKey}}" }
