@@ -23,6 +23,12 @@ public static class PocApp
             return await SelfTestAsync(settings, log);
         }
 
+        if (args.Any(a => a.Equals("--sendgrid", StringComparison.OrdinalIgnoreCase)))
+        {
+            await FullPipelineAsync(settings, log);
+            return 0;
+        }
+
         return await MenuLoopAsync(settings, log);
     }
 

@@ -14,6 +14,7 @@ dotnet user-secrets set "SendGrid:ApiKey"  "<SG.xxxx>"        --project Mailchim
 dotnet user-secrets set "Poc:ToEmail"      "you@example.org"  --project MailchimpPoc.csproj
 
 dotnet run --project MailchimpPoc.csproj -- selftest   # works without keys (offline proof)
+dotnet run --project MailchimpPoc.csproj -- --sendgrid  # sends a sample email via SendGrid to Poc:ToEmail (no menu)
 dotnet run --project MailchimpPoc.csproj               # interactive menu
 ```
 
