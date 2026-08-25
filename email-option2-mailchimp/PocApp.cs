@@ -168,7 +168,7 @@ public static class PocApp
         Console.WriteLine("this is a client-side preview demonstrating tag semantics only.");
     }
 
-    private const string AssessmentBookedTemplateId = "10128760";
+    private const string AssessmentBookedTemplateId = "10128764";
 
     private static async Task FullPipelineAsync(PocSettings settings, JsonLinesLogger log, string templateId = null)
     {
