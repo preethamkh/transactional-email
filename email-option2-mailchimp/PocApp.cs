@@ -198,12 +198,21 @@ public static class PocApp
                 return;
             }
             using var doc = JsonDocument.Parse(body);
-            html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() ?? string.Empty : string.Empty;
             subject = doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? subjectFallback : subjectFallback;
+            // Try to get HTML from default-content sections (this account's storage format)
+            html = await FetchTemplateHtmlFromDefaultContent(mc, id);
+            if (string.IsNullOrEmpty(html))
+            {
+                Console.WriteLine("Template HTML not returned by API. Using Assessment Booked sample.");
+                html = TemplateRenderer.AssessmentBookedSampleHtml;
+            }
         }
 
         var sender = new SendGridApiClient(settings.SendGridApiKey!);
-        var rendered = TemplateRenderer.Render(html, TemplateRenderer.SampleMergeData);
+        var mergeData = string.Equals(id, AssessmentBookedTemplateId, StringComparison.Ordinal)
+            ? TemplateRenderer.AssessmentBookedMergeData
+            : TemplateRenderer.SampleMergeData;
+        var rendered = TemplateRenderer.Render(html, mergeData);
         sw.Restart();
         var sent = await sender.SendHtmlAsync(subject, rendered, settings.ToEmail!, settings.FromEmail!);
         Console.WriteLine($"SendGrid send: {(sent.IsSuccess ? "SUCCESS" : $"FAILED {(int)sent.StatusCode}")} in {sw.ElapsedMilliseconds} ms");
@@ -240,12 +249,10 @@ public static class PocApp
             }
             using var doc = JsonDocument.Parse(body);
             subject = doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? subjectFallback : subjectFallback;
-            html = doc.RootElement.TryGetProperty("html", out var h) ? h.GetString() : null;
-            // Multichannel/drag-and-drop templates don't expose raw HTML via /templates.
-            // Fall back to the Assessment Booked sample so merge-tag rendering is still demonstrated.
+            html = await FetchTemplateHtmlFromDefaultContent(mc, id);
             if (string.IsNullOrEmpty(html))
             {
-                Console.WriteLine("Template HTML not returned by API (multichannel). Using Assessment Booked sample.");
+                Console.WriteLine("Template HTML not returned by API. Using Assessment Booked sample.");
                 html = TemplateRenderer.AssessmentBookedSampleHtml;
             }
         }
@@ -293,6 +300,63 @@ public static class PocApp
     {
         Console.Write("Template id (blank = built-in sample): ");
         return Console.ReadLine()?.Trim() ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Fetches template content from Mailchimp's /default-content endpoint and assembles
+    /// header + main + footer sections into a single HTML document.
+    /// This is how this Mailchimp account stores template content.
+    /// </summary>
+    private static async Task<string> FetchTemplateHtmlFromDefaultContent(MailchimpApiClient mc, string templateId)
+    {
+        var (ok, status, body) = await mc.GetAsyncAsync($"/templates/{Uri.EscapeDataString(templateId)}/default-content");
+        if (!ok)
+        {
+            Console.WriteLine($"Default-content fetch failed: HTTP {(int)status}");
+            return null;
+        }
+        using var doc = JsonDocument.Parse(body);
+        if (!doc.RootElement.TryGetProperty("sections", out var sections))
+            return null;
+
+        var sb = new StringBuilder();
+        var htmlStart = """
+        <!DOCTYPE html>
+        <html>
+          <body style="font-family: Arial, sans-serif; color:#222; line-height:1.5;">
+            <div style="max-width:600px; margin:0 auto; padding:20px;">
+        """;
+        var htmlEnd = """
+            </div>
+          </body>
+        </html>
+        """;
+
+        sb.Append(htmlStart);
+        // Common section order: header, preheader, main, footer, etc.
+        var sectionOrder = new[] { "header", "preheader", "main", "footer", "tracking_information", "prex_headline" };
+        foreach (var section in sectionOrder)
+        {
+            if (sections.TryGetProperty(section, out var content) && content.ValueKind == JsonValueKind.String)
+            {
+                var html = content.GetString();
+                if (!string.IsNullOrWhiteSpace(html))
+                    sb.Append(html);
+            }
+        }
+        // Also include any other sections not in the standard order
+        foreach (var prop in sections.EnumerateObject())
+        {
+            if (!sectionOrder.Contains(prop.Name, StringComparer.OrdinalIgnoreCase) &&
+                prop.Value.ValueKind == JsonValueKind.String)
+            {
+                var html = prop.Value.GetString();
+                if (!string.IsNullOrWhiteSpace(html))
+                    sb.Append(html);
+            }
+        }
+        sb.Append(htmlEnd);
+        return sb.ToString();
     }
 
     private static string Sanitise(string id) => new(id.Where(char.IsLetterOrDigit).ToArray());
