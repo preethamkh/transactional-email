@@ -23,15 +23,17 @@ public static class PocApp
             return await SelfTestAsync(settings, log);
         }
 
+        var templateId = ExtractTemplateId(args) ?? AssessmentBookedTemplateId;
+
         if (args.Any(a => a.Equals("--sendgrid", StringComparison.OrdinalIgnoreCase)))
         {
-            await FullPipelineAsync(settings, log, AssessmentBookedTemplateId);
+            await FullPipelineAsync(settings, log, templateId);
             return 0;
         }
 
         if (args.Any(a => a.Equals("--mandrill", StringComparison.OrdinalIgnoreCase)))
         {
-            await FullPipelineViaMandrillAsync(settings, log, AssessmentBookedTemplateId);
+            await FullPipelineViaMandrillAsync(settings, log, templateId);
             return 0;
         }
 
@@ -168,7 +170,11 @@ public static class PocApp
         Console.WriteLine("this is a client-side preview demonstrating tag semantics only.");
     }
 
-    private const string AssessmentBookedTemplateId = "10128764";
+    // Template 10128760 "Assessment Booked" stores its content in API-exposed default-content
+    // sections (header/main/footer) and is the template the download-and-send pipeline can use.
+    // Template 10128764 "Assessment Booking Confirmation" exposes no content via the API
+    // (empty default-content), so it cannot be downloaded.
+    private const string AssessmentBookedTemplateId = "10128760";
 
     private static async Task FullPipelineAsync(PocSettings settings, JsonLinesLogger log, string templateId = null)
     {
@@ -300,6 +306,22 @@ public static class PocApp
     {
         Console.Write("Template id (blank = built-in sample): ");
         return Console.ReadLine()?.Trim() ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Reads an optional template id passed after --sendgrid or --mandrill, e.g. "--mandrill 10128760".
+    /// This lets the same binary target any of the templates users create in Mailchimp without code changes.
+    /// </summary>
+    private static string? ExtractTemplateId(string[] args)
+    {
+        var flags = new[] { "--sendgrid", "--mandrill" };
+        foreach (var flag in flags)
+        {
+            var index = Array.FindIndex(args, a => a.Equals(flag, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0 && index + 1 < args.Length && !args[index + 1].StartsWith('-'))
+                return args[index + 1];
+        }
+        return null;
     }
 
     /// <summary>
