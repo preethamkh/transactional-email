@@ -23,6 +23,13 @@ public static class PocApp
             return await SelfTestAsync(settings, log);
         }
 
+        var templateName = ExtractArgValue(args, "--mandrill-template");
+        if (templateName is not null)
+        {
+            await MandrillTemplatePipelineAsync(settings, log, templateName);
+            return 0;
+        }
+
         var templateId = ExtractTemplateId(args) ?? AssessmentBookedTemplateId;
 
         if (args.Any(a => a.Equals("--sendgrid", StringComparison.OrdinalIgnoreCase)))
@@ -55,7 +62,8 @@ public static class PocApp
                     case "3": RenderSample(); break;
                     case "4": await FullPipelineAsync(settings, log); break;
                     case "5": await FullPipelineViaMandrillAsync(settings, log); break;
-                    case "6": return 0;
+                    case "6": await MandrillTemplateByNameAsync(settings, log); break;
+                    case "7": return 0;
                     default: Console.WriteLine("Unknown option."); break;
                 }
             }
@@ -82,7 +90,8 @@ public static class PocApp
         Console.WriteLine(" 3. Render sample merge tags  (offline proof)");
         Console.WriteLine(" 4. FULL PIPELINE via SENDGRID (get -> render -> send)");
         Console.WriteLine(" 5. FULL PIPELINE via MANDRILL (get -> server-side merge render -> send)");
-        Console.WriteLine(" 6. Exit");
+        Console.WriteLine(" 6. SEND via MANDRILL TEMPLATE  (send-template by template name)");
+        Console.WriteLine(" 7. Exit");
         Console.Write("Select: ");
     }
 
@@ -312,16 +321,48 @@ public static class PocApp
     /// Reads an optional template id passed after --sendgrid or --mandrill, e.g. "--mandrill 10128760".
     /// This lets the same binary target any of the templates users create in Mailchimp without code changes.
     /// </summary>
-    private static string? ExtractTemplateId(string[] args)
+    private static string? ExtractTemplateId(string[] args) =>
+        ExtractArgValue(args, "--sendgrid") ?? ExtractArgValue(args, "--mandrill");
+
+    /// <summary>Returns the value that follows a named CLI flag, or null when the flag has no value.</summary>
+    private static string? ExtractArgValue(string[] args, string flag)
     {
-        var flags = new[] { "--sendgrid", "--mandrill" };
-        foreach (var flag in flags)
-        {
-            var index = Array.FindIndex(args, a => a.Equals(flag, StringComparison.OrdinalIgnoreCase));
-            if (index >= 0 && index + 1 < args.Length && !args[index + 1].StartsWith('-'))
-                return args[index + 1];
-        }
+        var index = Array.FindIndex(args, a => a.Equals(flag, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0 && index + 1 < args.Length && !args[index + 1].StartsWith('-'))
+            return args[index + 1];
         return null;
+    }
+
+    /// <summary>
+    /// Sends using a template stored in the Mandrill (Mailchimp Transactional) template library,
+    /// referenced by its name/slug. This is the recommended production path: the template lives
+    /// in Mailchimp, the app only points to it and passes merge variables.
+    /// </summary>
+    private static async Task MandrillTemplatePipelineAsync(PocSettings settings, JsonLinesLogger log, string templateName)
+    {
+        if (!EnsureConfigured(settings.MandrillApiKey, "Mandrill:ApiKey")) return;
+        if (!EnsureConfigured(settings.ToEmail, "Poc:ToEmail")) return;
+
+        var mandrill = new MandrillApiClient(settings.MandrillApiKey!);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sent = await mandrill.SendTemplateAsync(
+            templateName,
+            settings.FromEmail!,
+            "Transactional Email POC",
+            "Assessment Booked (Mandrill template)",
+            settings.ToEmail!,
+            TemplateRenderer.AssessmentBookedMergeData);
+        Console.WriteLine($"Mandrill send-template: {(sent.IsSuccess ? $"SUCCESS ({sent.Status})" : $"FAILED ({sent.Status})")}");
+        if (!sent.IsSuccess) Console.WriteLine(sent.RejectReason);
+        await log.WriteAsync("send-template-via-mandrill", templateName, sent.IsSuccess ? sent.Status : $"rejected:{sent.RejectReason}", sw.ElapsedMilliseconds, sent.RejectReason);
+    }
+
+    private static async Task MandrillTemplateByNameAsync(PocSettings settings, JsonLinesLogger log)
+    {
+        Console.Write("Mandrill template name (e.g. poc-dummy-code): ");
+        var name = Console.ReadLine()?.Trim();
+        if (string.IsNullOrEmpty(name)) return;
+        await MandrillTemplatePipelineAsync(settings, log, name);
     }
 
     /// <summary>

@@ -50,11 +50,46 @@ public sealed class MandrillApiClient
         };
 
         var (ok, status, body) = await PostAsync("/messages/send.json", payload);
-        if (!ok)
-        {
-            return new MandrillSendResult(false, $"http-{(int)status}", null, body);
-        }
+        return ok ? ParseSendResponse(body) : new MandrillSendResult(false, $"http-{(int)status}", null, body);
+    }
 
+    /// <summary>
+    /// Sends using a template stored in the Mandrill (Mailchimp Transactional) template library.
+    /// The template is referenced by name; merge variables are rendered server-side
+    /// (merge_language=mailchimp), so *|TAG|* placeholders are replaced by Mandrill at send time.
+    /// </summary>
+    public async Task<MandrillSendResult> SendTemplateAsync(
+        string templateName,
+        string fromEmail,
+        string fromName,
+        string subject,
+        string toEmail,
+        IReadOnlyDictionary<string, string> globalMergeVars)
+    {
+        var payload = new
+        {
+            key = _apiKey,
+            template_name = templateName,
+            template_content = Array.Empty<object>(),
+            message = new
+            {
+                from_email = fromEmail,
+                from_name = fromName,
+                subject,
+                to = new[] { new { email = toEmail, type = "to" } },
+                merge_language = "mailchimp",
+                global_merge_vars = globalMergeVars.Select(kv => new { name = kv.Key, content = kv.Value }).ToArray(),
+                auto_text = true
+            },
+            @async = false
+        };
+
+        var (ok, status, body) = await PostAsync("/messages/send-template.json", payload);
+        return ok ? ParseSendResponse(body) : new MandrillSendResult(false, $"http-{(int)status}", null, body);
+    }
+
+    private static MandrillSendResult ParseSendResponse(string body)
+    {
         using var doc = JsonDocument.Parse(body);
         var first = doc.RootElement.EnumerateArray().FirstOrDefault();
         if (first.ValueKind == JsonValueKind.Undefined)
