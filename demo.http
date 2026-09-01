@@ -1,0 +1,72 @@
+@host = http://localhost:5080
+@apiKey = demo-key
+@recipient = preetham.kh@physiocouncil.com.au
+@correlation = meeting-demo-001
+
+### 1. Service health. No Azure resources or provider key required.
+GET {{host}}/health
+
+### 2. Send a realistic nested payload. Without MANDRILL_API_KEY this is safely simulated.
+POST {{host}}/api/v1/email/send
+X-Source-System: powerautomate-demo
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "templateKey": "AssessmentBooked",
+  "to": [{ "email": "{{recipient}}", "name": "Jane Example" }],
+  "data": {
+    "candidate": {
+      "id": "C-10045",
+      "name": "Jane Example",
+      "email": "{{recipient}}"
+    },
+    "assessment": {
+      "type": "Capability Assessment",
+      "status": "Booked"
+    },
+    "session": {
+      "date": "Monday, 25 August 2026",
+      "location": { "name": "Melbourne", "timeZone": "Australia/Melbourne" }
+    }
+  },
+  "sourceSystem": "powerautomate-demo",
+  "correlationId": "{{correlation}}",
+  "idempotencyKey": "{{correlation}}"
+}
+
+### 3. Repeat from a different system. Same contract, different caller.
+POST {{host}}/api/v1/email/send
+X-Source-System: accreditation-demo
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "templateKey": "Welcome",
+  "to": [{ "email": "{{recipient}}", "name": "Jane Example" }],
+  "data": { "candidateName": "Jane Example", "portal": "Accreditation" },
+  "sourceSystem": "accreditation-demo",
+  "correlationId": "meeting-demo-002"
+}
+
+### 4. Search the support view/API.
+GET {{host}}/api/v1/activity?search={{recipient}}
+X-Source-System: support-demo
+X-Api-Key: {{apiKey}}
+
+### 5. Browse centrally registered templates.
+GET {{host}}/api/v1/templates
+X-Source-System: support-demo
+X-Api-Key: {{apiKey}}
+
+### 6. Prove the API rejects an unauthorised caller.
+POST {{host}}/api/v1/email/send
+Content-Type: application/json
+
+{ "templateKey": "AssessmentBooked", "to": [{ "email": "{{recipient}}" }], "data": {}, "sourceSystem": "unknown" }
+
+### 7. Simulate a Mandrill webhook event.
+POST {{host}}/api/v1/events/mandrill
+Content-Type: application/json
+
+[{ "event": "delivered", "email": "{{recipient}}", "_id": "mandrill-demo-001" }]
