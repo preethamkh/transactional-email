@@ -4,6 +4,48 @@
 
 “We need to choose whether each application owns email sending, or whether one small service owns the common provider, reliability and audit responsibilities.”
 
+## Simple diagrams for the presentation
+
+### Option 1: distributed ownership
+
+```mermaid
+flowchart LR
+    Systems[Assessment / Accreditation / D365 / PA] --> Apps[Each system owns its email code]
+    Apps --> M[Mandrill]
+    M --> WH[Mandrill webhooks]
+    WH --> Apps
+    Apps --> CRM[Dataverse communication records]
+    Apps --> UI[Unified UI built from each system's audit data]
+    TF[Terraform] -. provisions each app's resources .-> Apps
+```
+
+### Option 2: central ownership
+
+```mermaid
+flowchart LR
+    Systems[Assessment / Accreditation / D365 / PA] --> API[Central .NET API<br/>Azure App Service]
+    API --> SB[Azure Service Bus]
+    SB --> F[Azure Function]
+    F --> M[Mandrill]
+    M --> F
+    F --> SQL[Azure SQL audit]
+    F --> CRM[Dataverse communication records]
+    SQL --> UI[Unified .NET support UI]
+```
+
+### Option 3: controlled fallback
+
+```mermaid
+flowchart LR
+    API[Central service unavailable] --> Outbox[Caller outbox / pending record]
+    Outbox --> Retry[Retry when API returns]
+    Critical[Critical emergency only] --> BG[Break-glass process]
+    BG --> M[Direct Mandrill send]
+    M --> Reconcile[Reconcile result into central audit and CRM later]
+```
+
+Use these three diagrams first. Use the detailed diagrams below only when discussing implementation questions.
+
 ## Option 1: Shared Library / Distributed Sending
 
 ```mermaid
@@ -14,14 +56,27 @@ flowchart LR
     L1 --> M[Mandrill API]
     L2 --> M
     L3 --> M
-    L1 --> LA[Application logging / audit]
-    L2 --> LD[Application logging / audit]
-    L3 --> LC[Application logging / audit]
+    M --> W[Mandrill webhooks]
+    W --> L1
+    W --> L2
+    W --> L3
+    L1 --> LA[Assessment audit store]
+    L2 --> LD[D365/PA audit store]
+    L3 --> LC[Accreditation audit store]
+    LA --> CRM1[Dataverse communication records]
+    LD --> CRM2[Dataverse communication records]
+    LC --> CRM3[Dataverse communication records]
+    LA --> UI[Unified UI<br/>aggregates each audit source]
+    LD --> UI
+    LC --> UI
+    TF[Terraform] -. provisions each app's resources .-> L1
+    TF -. provisions each app's resources .-> L2
+    TF -. provisions each app's resources .-> L3
 ```
 
-**Technology:** reusable .NET class library/NuGet package, Mandrill API/SDK, each application’s own configuration and secrets, application logging/database. No central API, Service Bus or Function is required.
+**Technology:** reusable .NET class library/NuGet package, Mandrill API/SDK, each application’s own configuration and secrets, webhook receiver, application audit database/logging, Dataverse write-back, unified UI and Terraform per application. No central API, Service Bus or Function is required, but every consumer must implement or host equivalent responsibilities.
 
-**Say:** “Each system sends independently. If Assessment is unavailable, Accreditation and D365 can still send. The trade-off is that provider code, credentials, mappings, retries, monitoring and audit are repeated and must be upgraded in every consumer.”
+**Say:** “This diagram is simple at the centre because there is no centre, but the responsibilities have not disappeared. Each system needs its own webhook handling, audit storage, CRM write-back, UI contribution, retries, secrets and Terraform. If Assessment is unavailable, Accreditation and D365 can still send, but the platform is duplicated.”
 
 ## Option 2: Central Email Service
 
@@ -114,7 +169,15 @@ flowchart LR
 
 **“Do templates need downloading?”** No for sending. The service sends the Mandrill slug and variables; Mandrill renders the template. Export/download is only for backup, migration, versioning or local testing.
 
+**“Does central email require a template repository?”** Not necessarily. A template repository means storing the full HTML/content files in source control; a mapping registry only records a stable key, Mandrill slug and required variables. Both architectures need that metadata somewhere, but neither requires a Git repository of full templates. With central service, Mandrill can remain the business-owned content editor and the central service can use a small configuration file, naming convention or later SQL registry. With shared library, the mapping is normally repeated in each application’s configuration. If the organisation requires template versioning and promotion through environments, exporting content to a repository may be useful for both approaches, not evidence against centralisation.
+
+**“Is the mapping maintenance unique to central email?”** No. Central service concentrates it once; shared library distributes it across Assessment, Accreditation, D365/PA and other consumers. A new template can be used without a deployment only if the service dynamically accepts the Mandrill slug or reads mappings from a runtime registry. The controlled approach uses a stable key and a small configuration deployment, with no service outage. The choice is centralised governance versus distributed ownership, not mapping versus no mapping.
+
 **“Can complex 2D/3D/4D data work?”** Yes, if the API contract accepts nested objects and lists. Simple values can be flattened by the provider adapter. Repeating lists need an explicit rendering rule or pre-rendered HTML; flattening alone does not create loops.
+
+**“Should complex business logic live in the central service?”** No. The source system keeps domain decisions and prepares an email view model or a pre-rendered repeating section. The central service handles template lookup, generic rendering/provider formatting, delivery, retries, webhooks and audit. This prevents the central service becoming coupled to Assessment or Accreditation rules while still centralising common email operations.
+
+**“Does a shared library avoid a template repository?”** It may avoid one central repository by letting each application own templates or mappings, but that creates multiple sources of truth. A central service can keep Mandrill as the content source and centralise only the contract/mapping metadata; it does not need to download or duplicate every template.
 
 **“Where do normal users see the email?”** Write a small asynchronous Dataverse Communication/Email activity against the Contact or relevant CRM record. Keep detailed technical delivery history in the authenticated SQL-backed support UI. SQL is the technical audit record; CRM is the business-facing summary.
 

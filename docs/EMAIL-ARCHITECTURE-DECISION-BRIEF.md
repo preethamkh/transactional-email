@@ -104,6 +104,16 @@ An existing template already has a known key-to-slug mapping. A user can change 
 
 The provider adapter is ordinary application code inside the central service, not another Azure service. It converts the central request into Mandrill’s API payload, including the Mandrill slug, merge variables, authentication and response handling. It is an internal class/library such as `MandrillEmailSender`; it can later be replaced by a different provider adapter without changing D365, Power Automate or portal callers.
 
+### Where complex logic belongs
+
+The originating system should own business logic: which records qualify, calculations, permissions, workflow decisions and how its domain data is assembled. It sends the central service an email view model containing the values the template needs. The central service owns delivery concerns: template lookup, provider formatting, generic rendering rules, retries, logging and webhooks. It must not become a second Assessment or Accreditation domain engine.
+
+For a repeating table or collection, the originating system can either send a structured list when the central rendering contract supports it, or render that system-specific section into safe HTML before calling the service. The central service then sends the result without needing to understand the business rules. This addresses the independence concern: domain complexity stays local, while common delivery and audit behaviour remains central. A shared library does not provide a special capability here; it simply causes each application to implement the same provider/delivery concerns locally.
+
+### Template repository versus template mapping
+
+A repository of full template content is different from a mapping registry. Neither architecture inherently requires a Git repository containing every Mandrill HTML template. Both need metadata somewhere: a stable application key, provider slug and expected variables. The central service can keep Mandrill as the content source and store only this small metadata in configuration, a naming convention or a later SQL registry. The shared-library approach usually stores equivalent metadata in each consuming application, which creates multiple sources of truth. Exporting templates to source control is useful for backup, versioning and promotion between environments, but it is an optional governance choice for either architecture, not a special requirement of central email.
+
 ## Logging, CRM and unified UI
 
 The API/Function should write an audit record independently of the email content. The minimum record is:
