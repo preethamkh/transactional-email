@@ -1,6 +1,6 @@
 # Email Architecture Comparison Demo
 
-This is a separate, local-only demonstration of the two architectures being considered after Mandrill was selected:
+This is a separate, intentionally small proof-of-concept demonstration of the two architectures being considered after Mandrill was selected. It is not the production email platform.
 
 1. **Shared library/distributed sending:** `Apc.Email.SharedLibraryDemo` references `Apc.Email.Mandrill` and calls Mandrill directly.
 2. **Central service:** `Apc.Email.CentralApi` exposes one HTTP contract, a support view, an audit endpoint and a Mandrill adapter.
@@ -18,6 +18,8 @@ dotnet run --project src/Apc.Email.CentralApi
 Open `demo.http` with VS Code REST Client. The API runs in simulation mode unless `MANDRILL_API_KEY` is set. This makes the demo safe to run without sending email.
 
 Open `http://localhost:5080/` for the support view. Send two requests from `demo.http`, refresh the page, and search by recipient or source system.
+
+For the exact evidence to capture and the claims that are deliberately not made, see `docs/PROOF-CHECKLIST.md`.
 
 For a real Mandrill send, set secrets only in the process environment:
 

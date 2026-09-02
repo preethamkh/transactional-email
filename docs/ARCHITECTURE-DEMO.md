@@ -50,6 +50,8 @@ flowchart LR
 | D365/Power Automate-shaped request | Via adapter | Yes | HTTP is required for non-.NET callers |
 | Central support search | Needs shared audit store | Yes | Long-term provider-independent history |
 
+The demo converts nested domain data into flat Mandrill merge variables such as `candidate_id`, `assessment_status` and `session_location_name`. This is the important distinction: the API can accept a rich domain request, while the provider adapter maps it to the flat variables used by a template. It does not claim that Mandrill templates can directly address arbitrary nested JSON paths.
+
 ## Data and logging
 
 The provider is not the system of record for audit. Store an APC-owned record containing:
@@ -80,6 +82,24 @@ Store message bodies only if there is a confirmed legal/support requirement. The
 | Infrastructure | Terraform included, not applied | Terraform per environment |
 
 Do not add these tables to the existing APC application database. A separate email/audit database gives the service independent ownership and avoids coupling the demonstration or future service to the APC schema.
+
+### Template mapping and redeployment
+
+Every approach needs a way to associate the application's stable template key with the provider template and to prepare its merge variables. The approaches differ only in where that configuration lives:
+
+- Shared library: each consuming application owns its Mandrill configuration and mapping.
+- Central service: the service owns one code/configuration mapping and callers use the stable key.
+- Hybrid: the central service owns the mapping; the client library only calls the service.
+
+The POC and initial implementation use version-controlled code/configuration. A business user editing the content or version of an existing Mandrill template does not require an API redeployment. Adding a new template or changing its mapping requires a configuration change and deployment, unless a future SQL-backed registry and admin screen is introduced. That registry and screen are optional future scope, not a prerequisite for the central service.
+
+### Support UI and deployment slots
+
+The demo support UI is deliberately embedded in the API, so it is not a second web application. Production can start this way on one App Service, protected by Entra ID. A separate support web app is justified only if support needs independent release/scaling or a different ownership boundary. Blue/green or deployment slots are production deployment techniques, not requirements for the POC; F1 does not provide the production-grade slot/Always On experience.
+
+### Alerts and Freshservice
+
+Alerting is a follow-on capability, not a prerequisite for sending. Mandrill webhook events should be persisted and published to Service Bus. An Azure Function can evaluate rules such as repeated rejects, bounce thresholds or provider outage, then notify an Azure Monitor Action Group, Teams, email, or Freshservice through its supported API/connector. Ownership and escalation thresholds must be agreed before implementing this.
 
 ## Cost position
 
@@ -125,13 +145,15 @@ No D365 or Power Automate implementation is included in this repository.
 ### Central service path
 
 1. Define the HTTP contract and authentication model.
-2. Implement Mandrill adapter and template registry.
+2. Implement Mandrill adapter and version-controlled template mapping.
 3. Add durable audit persistence and correlation IDs.
 4. Add Service Bus queueing, retry and dead-letter handling.
 5. Add Function consumers for provider events, archive and D365 write-back.
 6. Add Entra-authenticated support UI and filtered search.
 7. Deploy with Terraform to isolated dev/test/prod environments.
 8. Onboard PhysioPortal, Power Automate, D365 and Accreditation incrementally.
+
+The database-backed template registry and administration screen are optional follow-on work, justified only if authorised non-developers need to add mappings, or if template versioning, approval and multi-provider configuration must be managed at runtime.
 
 ### Agent-assisted delivery plan
 
