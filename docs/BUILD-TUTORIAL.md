@@ -75,6 +75,8 @@ dotnet add src/Apc.Email.SharedLibraryDemo/... reference src/Apc.Email.Contracts
 - `POST /api/v1/events/mandrill` → webhook stub.
 - `GET /` → embedded support UI (search box + results table).
 
+The CentralApi is the HTTP interface of the proposed email microservice. An endpoint is one route; the API is the complete contract; the microservice is the independently deployable component that owns email sending. Azure App Service can host it. Azure API Management is an optional gateway for policies, quotas, versioning and external consumers, not a replacement for the CentralApi.
+
 ### Step 7 — Shared-library console (`SharedLibraryDemo`)
 
 `Program.cs`:
@@ -137,5 +139,52 @@ flowchart LR
 | Support UI | Embedded single page | Separate or authenticated portal, RBAC |
 | Idempotency | Field present, not enforced | Enforce `idempotencyKey` |
 | D365 write-back | Not implemented | Dataverse Email activity create/update |
-| Template registry | In-memory list | Database-backed + approval workflow |
+| Template mapping | In-memory/configured list | Version-controlled configuration initially; optional SQL registry + admin workflow later |
 | Testing | Build + smoke only | Full unit/integration suite (see IMPLEMENTATION-PLAN) |
+
+## 5. Switching between local and Azure
+
+### Local simulation
+
+From the comparison directory, leave `ServiceBusConnection` unset and start the API:
+
+```powershell
+dotnet run --project src\Apc.Email.CentralApi
+```
+
+The API runs in simulation mode and keeps audit rows in memory. Use `demo.http` against `http://localhost:5080`. Stop the process with `Ctrl+C`.
+
+### Azure API
+
+The deployed API is `https://email-arch-lab-api.azurewebsites.net`. Send the same request to that base URL with `X-Api-Key: demo-key`. The API sends through Mandrill, publishes an audit event to `email-events`, and the Function writes it to SQL.
+
+To configure the provider secret without committing it:
+
+```powershell
+az webapp config appsettings set --resource-group rg-email-architecture-lab --name email-arch-lab-api --settings Mandrill__ApiKey='<rotated-key>' Mandrill__FromEmail='info@physiocouncil.com.au'
+```
+
+Inspect the asynchronous hand-off in Azure Portal: `rg-email-architecture-lab` -> `emailarchlabnamespace` -> `Queues` -> `email-events`. A message count that returns to zero indicates the Function has consumed it; failed messages appear in the dead-letter subqueue. View Function logs under `email-arch-lab-fn` -> `Log stream`.
+
+### Local Azure-connected mode
+
+To run the API locally while using Azure Service Bus and SQL, set the connection strings in the current PowerShell session, then start the API. Do not commit these values:
+
+```powershell
+$env:ServiceBusConnection = '<service-bus-connection-string>'
+$env:EmailAuditQueue = 'email-events'
+$env:Mandrill__ApiKey = '<rotated-key>'
+dotnet run --project src\Apc.Email.CentralApi
+```
+
+To return to local simulation, close that PowerShell session or run `$env:ServiceBusConnection = $null` and restart the API. Azure App Service settings are independent of local environment variables.
+
+### Cleanup
+
+The complete lab is isolated in `rg-email-architecture-lab`. Delete the resource group when finished to stop all lab billing:
+
+```powershell
+az group delete --name rg-email-architecture-lab --yes --no-wait
+```
+
+The Azure free-trial credit does not automatically delete resources when it expires. Check Cost Management and delete the resource group when the lab is no longer needed.

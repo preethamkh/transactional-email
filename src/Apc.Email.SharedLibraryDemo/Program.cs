@@ -27,7 +27,8 @@ var sender = new MandrillEmailSender(httpClient, apiKey, fromEmail);
 var request = new EmailRequest("MailchimpToMandrill", [new EmailRecipient(toEmail, "Demo recipient")],
     new Dictionary<string, object?>
     {
-        ["fname"] = "Dr. Preetham K H"
+        ["fname"] = "Dr. Preetham K H",
+        ["ASSESSMENT_TIME"] = "3.37 pm",
     }, "shared-library-demo");
-var result = await sender.SendTemplateAsync(request, "Mailchimp-to-Mandrill");
+var result = await sender.SendTemplateAsync(request, "mandrill-manually-created-template");
 Console.WriteLine($"Shared library send: {result.Status}; correlation={result.CorrelationId}; providerId={result.ProviderMessageId}");

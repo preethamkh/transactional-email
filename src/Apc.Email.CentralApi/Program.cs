@@ -2,9 +2,14 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using Apc.Email.Contracts;
 using Apc.Email.Mandrill;
+using Azure.Messaging.ServiceBus;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(new ConcurrentBag<EmailAuditRecord>());
+var serviceBusConnection = builder.Configuration["ServiceBusConnection"];
+var auditQueue = builder.Configuration["EmailAuditQueue"] ?? "email-events";
+if (!string.IsNullOrWhiteSpace(serviceBusConnection))
+    builder.Services.AddSingleton(new ServiceBusClient(serviceBusConnection));
 var app = builder.Build();
 
 var mandrillKey = builder.Configuration["Mandrill:ApiKey"] ?? Environment.GetEnvironmentVariable("MANDRILL_API_KEY");
@@ -14,7 +19,7 @@ var callerKey = builder.Configuration["ApiKeys:demo"] ?? Environment.GetEnvironm
 app.MapGet("/health", () => Results.Ok(new { status = "ok", provider = "mandrill", mode = string.IsNullOrWhiteSpace(mandrillKey) ? "simulation" : "live" }));
 app.MapGet("/", () => Results.Content(SupportPage(callerKey), "text/html"));
 
-app.MapPost("/api/v1/email/send", async (HttpRequest httpRequest, EmailRequest request, ConcurrentBag<EmailAuditRecord> audit) =>
+app.MapPost("/api/v1/email/send", async (HttpRequest httpRequest, EmailRequest request, ConcurrentBag<EmailAuditRecord> audit, ServiceBusClient? serviceBusClient) =>
 {
     if (httpRequest.Headers["X-Api-Key"] != callerKey)
         return Results.Unauthorized();
@@ -36,8 +41,18 @@ app.MapPost("/api/v1/email/send", async (HttpRequest httpRequest, EmailRequest r
 
     foreach (var recipient in request.To)
     {
-        audit.Add(new EmailAuditRecord(DateTimeOffset.UtcNow, result.CorrelationId, request.SourceSystem,
-            request.TemplateKey, recipient.Email, result.Status, result.ProviderMessageId, result.Error, request.Data));
+        var auditRecord = new EmailAuditRecord(DateTimeOffset.UtcNow, result.CorrelationId, request.SourceSystem,
+            request.TemplateKey, recipient.Email, result.Status, result.ProviderMessageId, result.Error, request.Data);
+        audit.Add(auditRecord);
+        if (serviceBusClient is not null)
+        {
+            await using var sender = serviceBusClient.CreateSender(auditQueue);
+            await sender.SendMessageAsync(new ServiceBusMessage(JsonSerializer.Serialize(auditRecord))
+            {
+                ContentType = "application/json",
+                CorrelationId = result.CorrelationId
+            });
+        }
     }
 
     return Results.Accepted($"/api/v1/activity/{result.CorrelationId}", result);

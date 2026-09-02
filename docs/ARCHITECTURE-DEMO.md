@@ -155,6 +155,14 @@ No D365 or Power Automate implementation is included in this repository.
 
 The database-backed template registry and administration screen are optional follow-on work, justified only if authorised non-developers need to add mappings, or if template versioning, approval and multi-provider configuration must be managed at runtime.
 
+### API, endpoint, microservice and APIM
+
+An **endpoint** is one address, such as `POST /api/v1/email/send`. An **API** is the collection of endpoints and its contract. A **microservice** is an independently deployable service that owns a focused business capability, data and operational concerns. The central email service is a microservice when it is independently deployed and owns email sending, provider integration, retries and audit events; calling it an API describes its interface, not its deployment model.
+
+**Azure App Service** can host the central API/microservice. **Azure API Management (APIM)** is an optional gateway in front of it. APIM can provide a stable public URL, authentication policies, rate limits, quotas, subscription keys, request transformation, versioning and developer documentation. It does not replace the email service, Mandrill adapter, queue, Function or audit database. For this POC, APIM is intentionally omitted; the App Service endpoint is sufficient. Add APIM only when gateway governance or external-consumer requirements justify its cost and complexity.
+
+The production request flow is therefore: caller -> optional APIM -> central email API hosted on App Service -> Service Bus -> Azure Function -> Mandrill, with the Function or API writing the audit record to the separate SQL database.
+
 ### Agent-assisted delivery plan
 
 Use the agent brief in `AGENT-BUILD-BRIEF.md`. Require agents to inspect the repository first, change only assigned folders, run tests/builds, never use APC credentials, and report assumptions and unresolved integration work.
