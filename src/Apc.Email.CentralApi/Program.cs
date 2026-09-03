@@ -19,10 +19,11 @@ var callerKey = builder.Configuration["ApiKeys:demo"] ?? Environment.GetEnvironm
 app.MapGet("/health", () => Results.Ok(new { status = "ok", provider = "mandrill", mode = string.IsNullOrWhiteSpace(mandrillKey) ? "simulation" : "live" }));
 app.MapGet("/", () => Results.Content(SupportPage(callerKey), "text/html"));
 
-app.MapPost("/api/v1/email/send", async (HttpRequest httpRequest, EmailRequest request, ConcurrentBag<EmailAuditRecord> audit, ServiceBusClient? serviceBusClient) =>
+app.MapPost("/api/v1/email/send", async (HttpRequest httpRequest, EmailRequest request, ConcurrentBag<EmailAuditRecord> audit, IServiceProvider services) =>
 {
     if (httpRequest.Headers["X-Api-Key"] != callerKey)
         return Results.Unauthorized();
+    var serviceBusClient = services.GetService<ServiceBusClient>();
     if (request.To.Count == 0 || string.IsNullOrWhiteSpace(request.TemplateKey))
         return Results.BadRequest(new { error = "TemplateKey and at least one recipient are required." });
 

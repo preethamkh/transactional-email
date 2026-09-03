@@ -3,10 +3,10 @@
 @recipient = preetham.kh@physiocouncil.com.au
 @correlation = meeting-demo-001
 
-### 1. Service health. No Azure resources or provider key required.
+### 1. Service health. 
 GET {{host}}/health
 
-### 2. Send a realistic nested payload. Without MANDRILL_API_KEY this is safely simulated.
+### 2. Send a realistic nested payload. Without MANDRILL_API_KEY this is simulated.
 POST {{host}}/api/v1/email/send
 X-Source-System: powerautomate-demo
 X-Api-Key: {{apiKey}}
@@ -28,7 +28,11 @@ Content-Type: application/json
     "session": {
       "date": "Monday, 25 August 2026",
       "location": { "name": "Melbourne", "timeZone": "Australia/Melbourne" }
-    }
+    },
+    "results": [
+      { "area": "Mobility", "score": 4, "observations": ["Stable gait", "Full range"] },
+      { "area": "Strength", "score": 5, "observations": ["Good resistance", "No pain"] }
+    ]
   },
   "sourceSystem": "powerautomate-demo",
   "correlationId": "{{correlation}}",
@@ -70,3 +74,25 @@ POST {{host}}/api/v1/events/mandrill
 Content-Type: application/json
 
 [{ "event": "delivered", "email": "{{recipient}}", "_id": "mandrill-demo-001" }]
+
+### 8. Send complex 2D/3D/4D data to central API (requires Mandrill template with Handlebars loops).
+POST {{host}}/api/v1/email/send
+X-Source-System: assessment-complex
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "templateKey": "assessment-complex",
+  "to": [{ "email": "{{recipient}}", "name": "Preetham K H" }],
+  "data": {
+    "candidateName": "Preetham K H",
+    "assessmentDate": "Monday, 25 August 2026",
+    "results": [
+      { "area": "Mobility", "score": 4, "observations": ["Stable gait", "Full range"] },
+      { "area": "Strength", "score": 5, "observations": ["Good resistance", "No pain"] }
+    ]
+  },
+  "sourceSystem": "assessment-complex",
+  "correlationId": "complex-demo-001",
+  "idempotencyKey": "complex-demo-001"
+}
