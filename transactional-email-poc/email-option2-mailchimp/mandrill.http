@@ -1,0 +1,29 @@
+@mandrillKey = "md-AqbvmlgwdHpbamB91M_zoQ"
+@from = "no-reply@transactional-dev.physiocouncil.com.au"
+
+### Ping (validates the API key itself)
+POST https://mandrillapp.com/api/1.0/users/ping2.json
+Content-Type: application/json
+
+{"key":"{{mandrillKey}}"}
+
+### Send (demo tier accepts only recipients @ authenticated domain)
+POST https://mandrillapp.com/api/1.0/messages/send.json
+Content-Type: application/json
+
+{
+    "key": "{{mandrillKey}}",
+    "message": {
+        "from_email": "{{from}}",
+        "to": [{ "email": "{{from}}", "type": "to" }],
+        "subject": "POC Test",
+        "text": "Sending a test email using Mandrill API",
+        "merge_language": "mailchimp"
+    }
+}
+
+### List Mandrill templates (separate from Mailchimp marketing templates)
+POST https://mandrillapp.com/api/1.0/templates/list.json
+Content-Type: application/json
+
+{"key":"{{mandrillKey}}"}

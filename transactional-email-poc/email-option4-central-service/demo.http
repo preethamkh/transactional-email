@@ -1,0 +1,56 @@
+@host = http://localhost:5080
+@assessmentKey = poc-key-assessment-001
+
+### 1. Health check (anonymous) - proves the service runs with zero infrastructure
+GET {{host}}/health
+
+### 2. Send PasswordReset (happy path - needs SendGrid key + real template id in templates.json)
+POST {{host}}/api/v1/email/send
+X-Source-System: assessment-portal
+X-Api-Key: {{assessmentKey}}
+Content-Type: application/json
+
+{
+  "templateKey": "PasswordReset",
+  "to": [{ "email": "you@example.org", "name": "Jane" }],
+  "data": { "firstName": "Jane", "resetLink": "https://portal/reset?token=demo" },
+  "sourceSystem": "assessment-portal"
+}
+
+### 3. Auth rejection (no key) - shows per-system auth
+POST {{host}}/api/v1/email/send
+Content-Type: application/json
+
+{ "templateKey": "PasswordReset", "to": [{ "email": "you@example.org" }] }
+
+### 4. Unknown template - shows registry governance
+POST {{host}}/api/v1/email/send
+X-Source-System: assessment-portal
+X-Api-Key: {{assessmentKey}}
+Content-Type: application/json
+
+{ "templateKey": "DoesNotExist", "to": [{ "email": "you@example.org" }] }
+
+### 5. Template catalogue - what business users own
+GET {{host}}/api/v1/templates
+X-Source-System: assessment-portal
+X-Api-Key: {{assessmentKey}}
+
+### 6. Indicative preview render
+GET {{host}}/api/v1/templates/PasswordReset/preview?data={"firstName":"Jane"}
+X-Source-System: assessment-portal
+X-Api-Key: {{assessmentKey}}
+
+### 7. Activity audit trail (FR-003 evidence)
+GET {{host}}/api/v1/activity?take=20
+X-Source-System: assessment-portal
+X-Api-Key: {{assessmentKey}}
+
+### 8. Simulated SendGrid event webhook (delivery/open/bounce status updates)
+POST {{host}}/api/v1/events/sendgrid
+Content-Type: application/json
+
+[
+  { "event": "delivered", "email": "jane@example.org", "sg_message_id": "demo123" },
+  { "event": "open", "email": "jane@example.org", "sg_message_id": "demo123" }
+]

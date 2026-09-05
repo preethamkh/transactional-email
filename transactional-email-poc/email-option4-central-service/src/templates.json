@@ -1,0 +1,38 @@
+{
+  "brandings": {
+    "apc": {
+      "fromEmail": "no-reply@REPLACE-ME.example.org",
+      "fromName": "Australian Physiotherapy Council"
+    },
+    "accreditation": {
+      "fromEmail": "accreditation@REPLACE-ME.example.org",
+      "fromName": "APC Accreditation"
+    }
+  },
+  "templates": [
+    {
+      "key": "PasswordReset",
+      "name": "Password reset request",
+      "provider": "sendgrid",
+      "providerTemplateId": "d-REPLACE_ME",
+      "owner": "Engagement",
+      "defaultBranding": "apc"
+    },
+    {
+      "key": "Welcome",
+      "name": "Registration welcome",
+      "provider": "sendgrid",
+      "providerTemplateId": "d-REPLACE_ME",
+      "owner": "Engagement",
+      "defaultBranding": "apc"
+    },
+    {
+      "key": "AccApproved",
+      "name": "Accreditation approved",
+      "provider": "sendgrid",
+      "providerTemplateId": "d-REPLACE_ME",
+      "owner": "Accreditation",
+      "defaultBranding": "accreditation"
+    }
+  ]
+}
