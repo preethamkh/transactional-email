@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.deploy/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!terraform.tfvars.example
+local.settings.json
+.env

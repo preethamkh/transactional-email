@@ -1,0 +1,6 @@
+subscription_id       = "04a39147-1a6b-4741-b535-77a1e4f91d7d"
+resource_group_name   = "rg-email-architecture-demo"
+location              = "australiaeast"
+storage_account_name  = "emailarchdemo12345"
+web_app_name          = "email-architecture-demo-12345"
+app_service_sku       = "F1"
