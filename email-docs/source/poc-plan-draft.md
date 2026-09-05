@@ -102,13 +102,13 @@ The SA suggested:
 **This is a reasonable idea, but with caveats:**
 
 **Pros:**
-- A NuGet package (e.g., `APC.EmailService`) would encapsulate the Mailchimp/SendGrid API calls
+- A NuGet package (e.g., `TransactionalEmail.Service`) would encapsulate the Mailchimp/SendGrid API calls
 - Both the Assessment Portal and the future Accreditation Portal could reference it
 - D365 and Power Automate could call the same package's API (if exposed as an HTTP endpoint)
 - Reduces duplication across systems
 
 **Cons / Risks:**
-- **The ShareIt.Library precedent is a warning**: The org is already locked into ShareIt's private NuGet packages. Creating another private NuGet package (APC.EmailService) risks the same dependency problem if not properly governed.
+- **The SharedLibrary precedent is a warning**: The org is already locked into SharedLib's private NuGet packages. Creating another private NuGet package (TransactionalEmail.Service) risks the same dependency problem if not properly governed.
 - **A NuGet package alone doesn't solve the "shared API" requirement** (BRD FR-004). A NuGet package is a **code library**, not an **API endpoint**. D365 and Power Automate can't reference a .NET NuGet package directly — they need an **HTTP endpoint**.
 - **The right pattern is a NuGet package + a hosted API**: The NuGet package contains the logic; a small hosted service (Azure Function or ASP.NET Core API) exposes it as an HTTP endpoint that D365/Power Automate can call.
 
@@ -127,7 +127,7 @@ The SA challenged:
 A "multi-dimensional transaction" here likely refers to:
 1. **Multiple systems** (Portal, D365, Power Automate, Accreditation Portal) all sending emails
 2. **Multiple template types** (assessment, accreditation, identity, marketing)
-3. **Multiple branding** (APC, potential partner orgs — FR-007)
+3. **Multiple branding** (organisation, potential partner orgs — FR-007)
 4. **Multiple channels** (transactional, marketing)
 5. **Multiple states** (draft, review, approved, sent, delivered, opened, failed)
 

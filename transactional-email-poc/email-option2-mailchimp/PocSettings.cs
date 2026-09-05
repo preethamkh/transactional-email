@@ -16,7 +16,7 @@ public sealed record PocSettings(
         Directory.CreateDirectory(logsDirectory);
         var fromEmail = configuration[SettingKeys.FromEmail]
             ?? configuration[SettingKeys.ToEmail]
-            ?? "no-reply@transactional-dev.physiocouncil.com.au";
+            ?? "no-reply@transactional-dev.example.com";
         return new PocSettings(
             configuration[SettingKeys.MailchimpApiKey],
             configuration[SettingKeys.SendGridApiKey],

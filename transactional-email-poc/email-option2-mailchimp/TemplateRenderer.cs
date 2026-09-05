@@ -28,25 +28,25 @@ public static class TemplateRenderer
             ["FNAME"] = "Jane",
             ["LNAME"] = "Citizen",
             ["EMAIL"] = "jane.citizen@example.org",
-            ["COMPANY"] = "Australian Physiotherapy Council"
+            ["COMPANY"] = "Demo Assessment Organisation"
         };
 
     /// <summary>
     /// Merge data for the "Assessment Booked" template (id 10128760).
-    /// Includes appointment-specific placeholders used in physiocouncil transactional emails.
+    /// Includes appointment-specific placeholders used in example transactional emails.
     /// </summary>
     public static IReadOnlyDictionary<string, string> AssessmentBookedMergeData { get; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["FNAME"] = "Preetham",
             ["LNAME"] = "Kh",
-            ["EMAIL"] = "preetham.kh@physiocouncil.com.au",
-            ["COMPANY"] = "Australian Physiotherapy Council",
+            ["EMAIL"] = "preetham.kh@example.com",
+            ["COMPANY"] = "Demo Assessment Organisation",
             ["ASSESSMENT_DATE"] = "Monday, 25 August 2026",
             ["ASSESSMENT_TIME"] = "10:30 AM",
             ["PRACTITIONER"] = "Dr Sarah Chen",
             ["LOCATION"] = "Melbourne Clinic, Level 2",
-            ["BOOKING_ID"] = "APC-2026-08-0012"
+            ["BOOKING_ID"] = "DEMO-2026-08-0012"
         };
 
     /// <summary>
@@ -61,7 +61,7 @@ public static class TemplateRenderer
           <h1>*|COMPANY|*</h1>
         </div>
         <p>Hi *|FNAME|* *|LNAME|*,</p>
-        <p>Your physiotherapy assessment has been booked.</p>
+        <p>Your assessment has been booked.</p>
         <table style="border-collapse:collapse; margin:16px 0;">
           <tr><td><strong>Date:</strong></td><td>&nbsp;*|ASSESSMENT_DATE|*</td></tr>
           <tr><td><strong>Time:</strong></td><td>&nbsp;*|ASSESSMENT_TIME|*</td></tr>

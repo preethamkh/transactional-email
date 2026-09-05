@@ -12,12 +12,12 @@ The options paper debates **which vendor** sends email (Mailchimp vs Dynamics Cu
 
 > **One HTTP endpoint that any system can call. One template store business users own. One activity log. One branding model. A swappable provider underneath.**
 
-If APC builds that shape, the vendor becomes a **configuration choice, not an architectural commitment**:
+If organisation builds that shape, the vendor becomes a **configuration choice, not an architectural commitment**:
 
 - Start with **SendGrid** (already the sender, already licensed, has a no-code template editor) — zero new licensing.
 - If the business later insists on Mailchimp templates or Customer Insights journeys, swap the adapter. Callers don't change.
 
-Options 1–3 each hard-wire a vendor and force APC to bet today, with incomplete information (Mandrill not even provisioned, Customer Insights unpriced). Option 4 defers the bet until there is evidence.
+Options 1–3 each hard-wire a vendor and force organisation to bet today, with incomplete information (Mandrill not even provisioned, Customer Insights unpriced). Option 4 defers the bet until there is evidence.
 
 ## 2. What It Is
 
@@ -56,7 +56,7 @@ X-Api-Key: <per-system key>
   "templateKey": "PasswordReset",
   "to": [{ "email": "user@example.org", "name": "Jane" }],
   "data": { "firstName": "Jane", "resetLink": "https://..." },
-  "branding": "apc",              // optional; default "apc"
+  "branding": "demo",              // optional; default "demo"
   "sourceSystem": "assessment-portal",
   "idempotencyKey": "guid"        // optional, prevents duplicate sends
 }
@@ -77,8 +77,8 @@ The POC ships `SendGridProvider` (REST v3 + Dynamic Templates). A `MandrillProvi
 
 | templateKey | provider | providerTemplateId | branding | owner |
 |---|---|---|---|---|
-| PasswordReset | sendgrid | d-abc123 | apc | Engagement |
-| AccApproved | sendgrid | d-def456 | apc | Accreditation |
+| PasswordReset | sendgrid | d-abc123 | demo | Engagement |
+| AccApproved | sendgrid | d-def456 | demo | Accreditation |
 
 Business users edit templates **in the provider's editor**; the registry just maps stable keys to provider IDs. Renaming or re-versioning a template never breaks a caller.
 
@@ -94,8 +94,8 @@ This is the question the paper keeps circling. The answer: **don't build an admi
 
 | System | How it calls the service | Effort |
 |---|---|---|
-| **Assessment Portal** (today's monolith) | **Facade trick:** implement ShareIt's `ISendGridService` interface backed by calls to the central API, then change **one line** — the DI registration at `Program.cs:139`. All ~20 controllers migrate instantly with zero call-site edits. Migrate call sites to a portal-owned `IEmailClient` gradually afterwards. | 1 interface + 1 line to cut over; gradual cleanup after |
-| **Accreditation Portal** (new repo, Nov 2026) | References the same thin client package (`APC.Email.Client`) or plain `HttpClient` — same contract. | Trivial by design |
+| **Assessment Portal** (today's monolith) | **Facade trick:** implement SharedLib's `ISendGridService` interface backed by calls to the central API, then change **one line** — the DI registration at `Program.cs:139`. All ~20 controllers migrate instantly with zero call-site edits. Migrate call sites to a portal-owned `IEmailClient` gradually afterwards. | 1 interface + 1 line to cut over; gradual cleanup after |
+| **Accreditation Portal** (new repo, Nov 2026) | References the same thin client package (`TransactionalEmail.Client`) or plain `HttpClient` — same contract. | Trivial by design |
 | **Power Automate** | HTTP action → `POST /api/v1/email/send` with a per-flow API key. | Low |
 | **D365** | D365-side triggers (workflows/plugins) fire a Power Automate flow that calls the service. (D365 cannot consume a .NET package — this is why the SA's NuGet-only idea fails FR-004.) | Low |
 | **Mailchimp marketing** | Unchanged. Audience sync stays exactly as is. | None |
@@ -104,10 +104,10 @@ This is the question the paper keeps circling. The answer: **don't build an admi
 
 The SA is right that shared logic should be packaged; he's wrong that a package alone suffices. D365 and Power Automate **cannot reference a .NET library** — they need HTTP. The resolution gives him his package:
 
-- `APC.Email.Client` — typed client for .NET callers (both portals)
+- `TransactionalEmail.Client` — typed client for .NET callers (both portals)
 - Central API — same core logic, exposed over HTTP for D365/Power Automate
 
-Package and API are two skins over one small core. This also avoids repeating the ShareIt lock-in mistake: the package is APC-owned, in APC's feed, wrapping an APC-owned service.
+Package and API are two skins over one small core. This also avoids repeating the SharedLib lock-in mistake: the package is organisation-owned, in organisation's feed, wrapping an organisation-owned service.
 
 ## 5. Why Not the Simpler Alternatives?
 
@@ -146,11 +146,11 @@ Two distinct concerns; the POC implements the first and designs the second:
 
 So: the POC does not write to D365 (that needs an app registration + approval), but everything it logs is shaped to feed that write-back, and a thin spike can validate the Dataverse create-email contract before Phase 2.
 
-### Spike result (22 Aug, PROD org `physiocouncil.crm6` — see environment correction) — write-back contract VALIDATED
+### Spike result (22 Aug, PROD org `example.crm6` — see environment correction) — write-back contract VALIDATED
 
-Created one draft Email activity via the Dataverse Web API against the contact `Preetham.KH@physiocouncil.com.au`.
+Created one draft Email activity via the Dataverse Web API against the contact `Preetham.KH@example.com`.
 
-> **Environment correction:** the connected organisation reports display-name `apc-uat`, but its URL is `https://physiocouncil.crm6.dynamics.com`, confirmed by the user to be **production**. The assumption that an `apc-uat`-style org name implied a sandbox was wrong — environment identity must always be verified from the URL. The user visually confirmed the timeline entry in their live Communication tab. Technically none of the findings change (draft creation is equally safe in either environment), but future CRM-side validation must target **DEV: `https://apc-dev.crm6.dynamics.com`** (or have the MCP connection repointed) before any further writes.
+> **Environment correction:** the connected organisation reports display-name `org-uat`, but its URL is `https://example.crm6.dynamics.com`, confirmed by the user to be **production**. The assumption that an `org-uat`-style org name implied a sandbox was wrong — environment identity must always be verified from the URL. The user visually confirmed the timeline entry in their live Communication tab. Technically none of the findings change (draft creation is equally safe in either environment), but future CRM-side validation must target **DEV: `https://org-dev.crm6.dynamics.com`** (or have the MCP connection repointed) before any further writes.
 
 | Contract element | Verified behaviour |
 |---|---|
@@ -168,7 +168,7 @@ Context observed in UAT while verifying: live D365-generated emails ("Payment re
 1. **Foundation (2–3 wks):** central service + SendGrid provider + registry + activity log + tests; facade `ISendGridService` implemented
 2. **Cutover (1 wk):** swap DI registration; all existing emails flow through the service with old static templates still working (provider renders fallback HTML)
 3. **Template migration (2–3 wks):** move 31 templates to SendGrid Dynamic Templates in priority order (identity/auth first, accreditation batch second); retire `wwwroot/Email` reads per template
-4. **Adoption (parallel):** Power Automate flows move to the API; Accreditation Portal repo starts on `APC.Email.Client` from day one
+4. **Adoption (parallel):** Power Automate flows move to the API; Accreditation Portal repo starts on `TransactionalEmail.Client` from day one
 5. **Later (optional):** D365 activity write-back, approval workflow UI, additional provider adapters
 
 ## 8. What This POC Must Prove

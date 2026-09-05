@@ -1,8 +1,8 @@
-# Branch 1 — `poc/email-option2-mailchimp`
+# Track 1 — Mailchimp template retrieval (Option 2)
 
-Validates the paper's **Option 2** (Mailchimp as central template library) — exactly what the BA/SA/manager asked the POC to prove. Local-only branch; never push.
+Validates the paper's **Option 2** (Mailchimp as central template library) — exactly what the BA/SA/manager asked the POC to prove.
 
-Canonical documentation: `docs/technical/transactional-email/` on branch `poc/email-docs` (docs 02 strategy, 03 manager asks, 04 run guide).
+Canonical documentation: [`../email-docs/`](../email-docs/) (docs 02 strategy, 03 manager asks, 04 run guide).
 
 ## Quickstart
 
@@ -12,7 +12,7 @@ dotnet user-secrets init --project MailchimpPoc.csproj
 dotnet user-secrets set "Mailchimp:ApiKey" "<key-datacenter>" --project MailchimpPoc.csproj
 dotnet user-secrets set "SendGrid:ApiKey"  "<SG.xxxx>"        --project MailchimpPoc.csproj
 dotnet user-secrets set "Mandrill:ApiKey"  "<md-xxxx>"        --project MailchimpPoc.csproj
-dotnet user-secrets set "Poc:FromEmail"    "no-reply@transactional-dev.physiocouncil.com.au" --project MailchimpPoc.csproj
+dotnet user-secrets set "Poc:FromEmail"    "no-reply@transactional-dev.example.com" --project MailchimpPoc.csproj
 dotnet user-secrets set "Poc:ToEmail"      "you@example.org"  --project MailchimpPoc.csproj
 
 dotnet run --project MailchimpPoc.csproj -- selftest    # works without keys (offline proof)
@@ -36,7 +36,7 @@ Every operation appends `logs/poc-log-yyyyMMdd.jsonl` — the logging comparison
 
 1. Create the Mailchimp **14-day Standard trial** (isolated from the production/Engagement account) and one dummy template (classic builder; include `*|FNAME|*`).
 2. Generate an API key (Account → Extras → API keys) — format `KEY-dc`.
-3. Mandrill (Mailchimp transactional sending) is **document-only** per decision: it needs a paid Standard plan + purchased blocks (~US$20/25k). Record the licensing facts in `FINDINGS.md` instead of testing them.
+3. Mandrill (Mailchimp transactional sending) uses the **demo tier**: ~25 sends/hour to recipients at an authenticated domain, after *Confirm domain* + *Authenticate domain* (SPF/DKIM). Record the licensing facts in `FINDINGS.md` as comparison evidence.
 
 ## Findings
 

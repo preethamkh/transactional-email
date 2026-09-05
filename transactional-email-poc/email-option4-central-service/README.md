@@ -1,10 +1,10 @@
-# Branch 2 — `poc/email-option4-central-service`
+# Track 2 — Central Email Service (Option 4)
 
-The **Option 4 POC**: a thin Central Email Service proving one HTTP surface can serve every system (portals, Power Automate, D365-via-flow) with swappable providers. Local-only branch; never push.
+The **Option 4 POC**: a thin Central Email Service proving one HTTP surface can serve every system (portals, Power Automate, D365-via-flow) with swappable providers.
 
-Canonical documentation: `docs/technical/transactional-email/` on branch `poc/email-docs` (doc 01 = design rationale, doc 02 = strategy/scorecard, doc 04 = full run guide).
+Canonical documentation: [`../email-docs/`](../email-docs/) (doc 01 = design rationale, doc 02 = strategy/scorecard, doc 04 = full run guide).
 
-## What this branch demonstrates
+## What this track demonstrates
 
 | Concern | Implementation | Maps to |
 |---|---|---|
@@ -14,7 +14,7 @@ Canonical documentation: `docs/technical/transactional-email/` on branch `poc/em
 | Activity/reporting foundation | JSONL activity log + `GET /activity` + SendGrid event webhook receiver | FR-003 |
 | Multi-branding | Branding configs per organisation resolved from template defaults | FR-007 |
 | Vendor reversibility | `IEmailProvider` seam; `SendGridProvider` is one implementation | Option 4 core argument |
-| ShareIt decoupling | Raw REST v3 call, no ShareIt.Library reference | Migration story |
+| SharedLib decoupling | Raw REST v3 call, no SharedLibrary reference | Migration story |
 
 ## Quickstart
 

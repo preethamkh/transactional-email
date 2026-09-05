@@ -1,35 +1,35 @@
-# POC Strategy — Two Branches, One Comparison
+# POC Strategy — Two Tracks, One Comparison
 
 **Status:** Plan — supersedes the earlier three-track draft; replaces `source/poc-plan-draft.md`
 **Date:** 22 August 2026 (rev 2)
 
 ---
 
-## 1. Decision: Why Only Two POC Branches
+## 1. Decision: Why Only Two POC Tracks
 
 The BA asked for: *"test sending emails, reporting, logging (compare with SendGrid), and getting templates out of MailChimp for D365 and Portal. Pricing."*
 
-That request maps to **Branch 1** below. A senior-architecture review concluded that POCing every option wastes scarce time, because most options share unknowns or cannot be meaningfully spiked:
+That request maps to **Track 1** below. A senior-architecture review concluded that POCing every option wastes scarce time, because most options share unknowns or cannot be meaningfully spiked:
 
 | Paper option | POC? | Rationale |
 |---|---|---|
 | Option 1 — Mailchimp delivery | **No** | Differentiator is Mandrill delivery, which requires a paid block (document-only per agreement). Architectural rejection (20+ call-site rewrites, write-back integrations) stands regardless of what a POC shows. |
-| Option 2 — Mailchimp templates | **Yes → Branch 1** | Exactly what BA/SA/manager asked for. Proves template retrieval + logging; send falls back via SendGrid. |
+| Option 2 — Mailchimp templates | **Yes → Track 1** | Exactly what BA/SA/manager asked for. Proves template retrieval + logging; send falls back via SendGrid. |
 | Option 3 — Customer Insights | **No** | Cannot be validated meaningfully without licensing decisions. Validation = vendor engagement + costings, not code. Revisit later as a possible adapter. |
-| Option 4 — Central Email Service | **Yes → Branch 2** | The recommended option. Its SendGrid provider work inherently demonstrates SendGrid Dynamic Templates — producing the incumbent-baseline evidence "for free." |
+| Option 4 — Central Email Service | **Yes → Track 2** | The recommended option. Its SendGrid provider work inherently demonstrates SendGrid Dynamic Templates — producing the incumbent-baseline evidence "for free." |
 
-**Net result:** two local branches produce evidence covering the BA's requirement, the best-of-paper option, the recommended new option, and the SendGrid comparison — with zero spend.
+**Net result:** two local POC tracks produce evidence covering the BA's requirement, the best-of-paper option, the recommended new option, and the SendGrid comparison — with zero spend.
 
-## 2. The Two Branches
+## 2. The Two Tracks
 
-| Branch (local only) | Validates | Maps to | Cost |
+| Track (folder) | Validates | Maps to | Cost |
 |---|---|---|---|
-| `poc/email-option2-mailchimp` | Mailchimp template storage/retrieval via API; merge-tag semantics; logging; **send via Mandrill demo tier AND via SendGrid fallback**; pricing/gotcha findings | Option 2 (+ Option 1's sending question — now testable, see update below) | $0 (trial + Mandrill demo tier) |
-| `poc/email-option4-central-service` | Thin central API: one endpoint, template registry, per-system keys, activity log, webhook receiver, Swagger/OpenAPI demo; SendGrid Dynamic Templates end-to-end | Option 4 + incumbent (SendGrid) baseline | $0 (existing account, free tier limits fine) |
+| `transactional-email-poc/email-option2-mailchimp` | Mailchimp template storage/retrieval via API; merge-tag semantics; logging; **send via Mandrill demo tier AND via SendGrid fallback**; pricing/gotcha findings | Option 2 (+ Option 1's sending question — now testable, see update below) | $0 (trial + Mandrill demo tier) |
+| `transactional-email-poc/email-option4-central-service` | Thin central API: one endpoint, template registry, per-system keys, activity log, webhook receiver, Swagger/OpenAPI demo; SendGrid Dynamic Templates end-to-end | Option 4 + incumbent (SendGrid) baseline | $0 (existing account, free tier limits fine) |
 
-Both share one conceptual harness: *list templates → get template → render with data → send → log → read status*. Branch 2 hosts the same operations behind HTTP.
+Both share one conceptual harness: *list templates → get template → render with data → send → log → read status*. Track 2 hosts the same operations behind HTTP.
 
-## 3. Branch 1 — Mailchimp (Option 2) Scope
+## 3. Track 1 — Mailchimp (Option 2) Scope
 
 1. Dummy template created in Mailchimp UI (14-day Standard trial account, isolated from production).
 2. Harness ops against `GET /3.0/templates`, `GET /3.0/templates/{id}` (returns `html` string).
@@ -44,17 +44,17 @@ Both share one conceptual harness: *list templates → get template → render w
 
 The Mailchimp account already exposes the Transactional (Mandrill) product with a free/demo tier (`transactional-mailchimp.png`). Consequences:
 
-- The earlier "Mandrill = document-only / needs ~US$20 block" stance is superseded. Branch 1 now includes a genuine Mailchimp→Mandrill send path: retrieved HTML + `global_merge_vars`, `merge_language=mailchimp`, server-side rendering.
+- The earlier "Mandrill = document-only / needs ~US$20 block" stance is superseded. Track 1 now includes a genuine Mailchimp→Mandrill send path: retrieved HTML + `global_merge_vars`, `merge_language=mailchimp`, server-side rendering.
 - **Demo-tier limits:** ~25 emails/hour outbound, 100/hour inbound, and — critically — **recipients must be at an authenticated domain** (no external domains).
 - **Prerequisite:** complete *Confirm your domain* + *Authenticate your domain* (SPF/DKIM DNS records). This requires DNS access → new manager/IT ask (doc 03 §1a). A gmail-based account cannot authenticate `gmail.com`, so the "gmail trial route" cannot deliver to external/gmail recipients.
 - **Comparison finding unlocked:** Mandrill demo requires full domain authentication before ANY send; SendGrid permits single-sender verification by confirmation click alone. Record this asymmetry in FINDINGS/scorecard.
 - Reporting evidence: once sends succeed, Mandrill-side activity/outbound stats can be captured alongside our JSONL operational log.
 
-## 4. Branch 2 — Central Email Service (Option 4) Scope
+## 4. Track 2 — Central Email Service (Option 4) Scope
 
 Build (~1 day, mostly assembly):
 1. ASP.NET Core Minimal API (net10): `POST /api/v1/email/send`, `GET /api/v1/templates`, `GET /api/v1/templates/{key}/preview`, `GET /api/v1/activity`, `POST /api/v1/events/sendgrid`, `GET /health`.
-2. `IEmailProvider` + `SendGridProvider` (raw REST v3, deliberately not ShareIt.Library — demonstrates decoupling; this doubles as the SendGrid evidence track).
+2. `IEmailProvider` + `SendGridProvider` (raw REST v3, deliberately not SharedLibrary — demonstrates decoupling; this doubles as the SendGrid evidence track).
 3. Template registry (`templates.json`: key → provider template ID → branding → owner); naive `{{handlebars}}` preview substitution (authoritative rendering stays in SendGrid).
 4. Per-system API-key auth (`X-Api-Key`), constant-time comparison.
 5. Activity log (JSONL) + webhook receiver stub updating status.
@@ -82,7 +82,7 @@ Score 1–5 per criterion; weights sum to 100. Options 1/3 rows completed from d
 | Implementation effort/risk vs existing portal | 10 | | | | |
 | Serves both portals post-separation | 8 | | | | |
 | Multi-branding (FR-007) | 6 | | | | |
-| ShareIt.Library impact | 6 | | | | |
+| SharedLibrary impact | 6 | | | | |
 | Vendor reversibility / lock-in | 6 | | | | |
 | Operational burden | 5 | | | | |
 | **Weighted total** | 100 | | | | |
@@ -108,27 +108,27 @@ Score 1–5 per criterion; weights sum to 100. Options 1/3 rows completed from d
 - [ ] Domain authentication (SPF/DKIM/DMARC) status on the SendGrid account
 - [ ] Current SendGrid plan tier + monthly volume (materially changes the pricing answer)
 
-## 7. Git Rules (All Local)
+## 7. Repository Layout & Git Notes
+
+The two tracks live in this repository under:
 
 ```
-master                              ← untouched; nothing committed here
-├── poc/email-docs                  ← documentation commits (this folder)
-├── poc/email-option2-mailchimp     ← Branch 1 harness + findings
-└── poc/email-option4-central-service ← Branch 2 service + tests + demo
+email-docs/                                        ← documentation (this folder)
+transactional-email-poc/email-option2-mailchimp    ← Track 1 harness + findings
+transactional-email-poc/email-option4-central-service ← Track 2 service + tests + demo
 ```
 
-- Created locally from master; **never pushed**, no PRs
-- Master working tree stays clean: docs live on `poc/email-docs`; switch with `git checkout poc/email-docs`
+- The tracks were originally developed on separate branches; in this standalone repository they are folded folders with their commit history preserved.
 - Secrets only via `dotnet user-secrets` / environment variables; `.gitignore` excludes logs and local settings; keys never appear in committed files
-- Winning branch gets fuller tests + integration docs before any remote discussion
+- The winning option gets fuller tests + integration docs before any production discussion
 
 ## 8. Time Budget
 
 | Day | Focus |
 |---|---|
-| 0 (half, today) | Docs committed; both branches scaffolded and building; access requests drafted |
-| 1 | Branch 1 complete incl. findings (needs Mailchimp trial key); SendGrid request lands Monday |
-| 2 | Branch 2 end-to-end once SendGrid key arrives; fill scorecard/pricing |
+| 0 (half, today) | Docs committed; both POC tracks scaffolded and building; access requests drafted |
+| 1 | Track 1 complete incl. findings (needs Mailchimp trial key); SendGrid request lands Monday |
+| 2 | Track 2 end-to-end once SendGrid key arrives; fill scorecard/pricing |
 | 3 (half) | Demo rehearsal (record it); pre-read sent to BA/SA before the meeting |
 
-**Monday dependency:** Branch 2's send-path demo needs the scoped SendGrid key (request text in doc 03). Everything else — scaffolding, Branch 1 retrieval work, docs, demo rehearsal — proceeds without waiting.
+**Monday dependency:** Track 2's send-path demo needs the scoped SendGrid key (request text in doc 03). Everything else — scaffolding, Track 1 retrieval work, docs, demo rehearsal — proceeds without waiting.

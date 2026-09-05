@@ -3,10 +3,10 @@
 **Author:** Senior Solutions Architect  
 **Date:** 20 August 2026  
 **Source Documents:**
-- `PhysioPortal/docs/Transactional Email Capability - Options Paper.docx` (BA/SA/Manager)
+- `ThePortal/docs/Transactional Email Capability - Options Paper.docx` (BA/SA/Manager)
 - `Documents/Project - Transactional Email/Business Requirements_Transactional Email.docx` (BRD, April 2026)
 - `Documents/IT delivery needs.pdf` (Operational context)
-- `PhysioPortal` codebase (current state)
+- `ThePortal` codebase (current state)
 
 **Status:** Updated analysis incorporating Accreditation Portal separation and BRD requirements
 
@@ -14,7 +14,7 @@
 
 ## 1. Executive Summary
 
-The Options Paper proposes three options for improving APC's transactional email capability. **The paper contains several factual errors about the current architecture** and **omits critical context** from the Business Requirements Document (BRD). This analysis:
+The Options Paper proposes three options for improving organisation's transactional email capability. **The paper contains several factual errors about the current architecture** and **omits critical context** from the Business Requirements Document (BRD). This analysis:
 
 1. Corrects the factual record about the current system
 2. Incorporates the BRD's explicit requirements (centralised API, multi-system support)
@@ -24,7 +24,7 @@ The Options Paper proposes three options for improving APC's transactional email
 
 **Bottom line:** The paper's recommended path (Option 2 — Mailchimp as template library) is directionally reasonable but **under-engineered** for the actual problem. The paper's Option 3 (Customer Insights) is **over-engineered** and would add significant cost and complexity for marginal benefit. The paper's Option 1 (Mailchimp for delivery) is **architecturally wrong** for this system.
 
-**CRITICAL UPDATE:** The Accreditation Portal is being separated into its own repository (`https://dev.azure.com/physiocouncil/Accreditation/_git/Accreditation`), with a target go-live of **November 2026**. The BRD (April 2026) confirms this separation as a **primary driver** for the transactional email project and explicitly calls for an **in-house API endpoint** that all systems (CRM, Power Automate, New Accreditation Portal, Existing Assessment Portal) should use. The IT Delivery Needs document shows the project targets **December 2027** — well after the separation. This fundamentally changes the analysis: a template store embedded in the Assessment portal alone is insufficient. The solution must be a **shared, central email service** that both portals can call.
+**CRITICAL UPDATE:** The Accreditation Portal is being separated into its own repository (`https://dev.azure.example.com/Accreditation/_git/Accreditation`), with a target go-live of **November 2026**. The BRD (April 2026) confirms this separation as a **primary driver** for the transactional email project and explicitly calls for an **in-house API endpoint** that all systems (CRM, Power Automate, New Accreditation Portal, Existing Assessment Portal) should use. The IT Delivery Needs document shows the project targets **December 2027** — well after the separation. This fundamentally changes the analysis: a template store embedded in the Assessment portal alone is insufficient. The solution must be a **shared, central email service** that both portals can call.
 
 The pragmatic best long-term solution is a **central email service** (small ASP.NET Core API or Azure Function) that provides: (1) centralised template management via SendGrid's native templates, (2) an API endpoint for all systems to send emails, (3) email activity tracking, and (4) multi-branding support. This leverages the existing SendGrid investment while serving both the Assessment and Accreditation portals.
 
@@ -36,7 +36,7 @@ The pragmatic best long-term solution is a **central email service** (small ASP.
 
 **Paper's claim:** "Accreditation communications: Outlook / Accreditation Portal" and "Assessment communications: Outlook / D365 / Power Automate processes"
 
-**Reality (as of August 2026):** The PhysioPortal is a **single ASP.NET Core MVC monolith** deployed to Azure App Service. The "Accreditation Portal" and "Assessment Portal" are **Areas within the same application** (`Areas/Accreditation/` and the main `Controllers/` + `Areas/Admin/`). They share the same codebase, the same database, the same D365 connection, and the same SendGrid email service.
+**Reality (as of August 2026):** The ThePortal is a **single ASP.NET Core MVC monolith** deployed to Azure App Service. The "Accreditation Portal" and "Assessment Portal" are **Areas within the same application** (`Areas/Accreditation/` and the main `Controllers/` + `Areas/Admin/`). They share the same codebase, the same database, the same D365 connection, and the same SendGrid email service.
 
 **BUT — this is changing.** The BRD confirms that the Accreditation Portal is being **separated into its own repository** with a target go-live of **November 2026**. The IT Delivery Needs document shows the Transactional Email Capability project targets **December 2027** — well after the separation.
 
@@ -46,7 +46,7 @@ The pragmatic best long-term solution is a **central email service** (small ASP.
 
 **Paper's claim:** "Accreditation customer insight should remain in the Accreditation Portal, reflecting the business decision to remove accreditation data from CRM and manage it within the Portal."
 
-**Reality:** The accreditation data model (`AccreditationModel`, `AccreditationPanelMemberModel`, `AccreditationReviewModel`, etc.) is stored in **Dynamics 365 tables** (`myr_accreditation`, `apc_accreditationpanelmember`, etc.). The `AccreditationEmail.cs` utility queries D365 via the `D365.Client()` ORM to get education provider contacts and panel member emails. The "Accreditation Portal" is just the MVC front-end for D365 data.
+**Reality:** The accreditation data model (`AccreditationModel`, `AccreditationPanelMemberModel`, `AccreditationReviewModel`, etc.) is stored in **Dynamics 365 tables** (`myr_accreditation`, `demo_accreditationpanelmember`, etc.). The `AccreditationEmail.cs` utility queries D365 via the `D365.Client()` ORM to get education provider contacts and panel member emails. The "Accreditation Portal" is just the MVC front-end for D365 data.
 
 **Implication:** The paper's repeated assertion that "accreditation customer insight remains in the Accreditation Portal" is factually incorrect. Accreditation data is in D365. The paper's Option 3 concern about "storing accreditation activity or insight back in D365/CRM" is moot — it's already there.
 
@@ -54,7 +54,7 @@ The pragmatic best long-term solution is a **central email service** (small ASP.
 
 **Paper's claim:** "D365 / Send Grid would no longer be the primary email sender" (Option 1 impact)
 
-**Reality:** SendGrid is the **only** email sender in the portal. D365 does not send emails from the portal. The `ISendGridService` (from `ShareIt.Library.SendGrid`) is registered in `Program.cs` and used across 20+ controllers and utility classes. D365 is the data store, not the email sender.
+**Reality:** SendGrid is the **only** email sender in the portal. D365 does not send emails from the portal. The `ISendGridService` (from `SharedLibrary.SendGrid`) is registered in `Program.cs` and used across 20+ controllers and utility classes. D365 is the data store, not the email sender.
 
 **Implication:** Option 1's premise that D365 is currently sending emails is wrong. The portal sends all transactional emails via SendGrid.
 
@@ -66,13 +66,13 @@ The pragmatic best long-term solution is a **central email service** (small ASP.
 
 **Implication:** Option 1's claim that Mailchimp would need new integration for transactional email ignores that the portal already has a Mailchimp transactional audience configured.
 
-### 2.5 The paper omits the ShareIt.Library dependency
+### 2.5 The paper omits the SharedLibrary dependency
 
-**Paper's claim:** No mention of the ShareIt.Library dependency anywhere.
+**Paper's claim:** No mention of the SharedLibrary dependency anywhere.
 
-**Reality:** The entire portal is built on `ShareIt.Library` (v10.5.10), `ShareIt.Library.SendGrid` (v10.0.0), and `ShareIt.Library.HtmlToPdf` (v10.2.3) — private NuGet packages from the **ShareIt Consulting Azure DevOps feed** (`pkgs.dev.azure.com/shareitconsulting/`). The `ISendGridService` interface, `SendGridService` implementation, `SendGridConfiguration`, `EmailAddressFields`, `ISiServices<T>`, `SiController<T>`, `PermittedModel<T>`, and the entire D365 ORM DSL all come from this library.
+**Reality:** The entire portal is built on `SharedLibrary` (v10.5.10), `SharedLibrary.SendGrid` (v10.0.0), and `SharedLibrary.HtmlToPdf` (v10.2.3) — private NuGet packages from the **internal Azure DevOps feed** (`pkgs.dev.azure.example.com/internal/`). The `ISendGridService` interface, `SendGridService` implementation, `SendGridConfiguration`, `EmailAddressFields`, `ISiServices<T>`, `SiController<T>`, `PermittedModel<T>`, and the entire D365 ORM DSL all come from this library.
 
-**Implication:** Any email solution must work with or replace the ShareIt.Library SendGrid wrapper. This is the solution architect's dependency that the user flagged. The paper's options don't address this at all.
+**Implication:** Any email solution must work with or replace the SharedLibrary SendGrid wrapper. This is the solution architect's dependency that the user flagged. The paper's options don't address this at all.
 
 ### 2.6 The paper's "Current State" table is incomplete
 
@@ -103,21 +103,21 @@ The pragmatic best long-term solution is a **central email service** (small ASP.
 ### 3.1 Email Sending Architecture (Actual)
 
 ```
-PhysioPortal (ASP.NET Core MVC, .NET 10)
+ThePortal (ASP.NET Core MVC, .NET 10)
     │
     ├── Controllers (Assessment, Eligibility, Dashboard, etc.)
     │       └── ISendGridService.SendEmailAsync(subject, plainText, html, to)
-    │               └── ShareIt.Library.SendGrid → SendGrid API
+    │               └── SharedLibrary.SendGrid → SendGrid API
     │
     ├── Areas/Accreditation/
     │       └── AccreditationEmail.StatusChange() → ISendGridService
-    │               └── ShareIt.Library.SendGrid → SendGrid API
+    │               └── SharedLibrary.SendGrid → SendGrid API
     │
     ├── Areas/Identity/ (Auth0 pages)
     │       └── ISendGridService.SendEmailAsync() → SendGrid API
     │
     ├── Areas/Api/ (Power Automate webhooks)
-    │       └── CheckAuth("AzurePowerAutomatePhysioPortal") → triggers flows
+    │       └── CheckAuth("AzurePowerAutomatePortal") → triggers flows
     │
     └── MailchimpUtil (marketing + transactional audience sync)
             └── MailChimp.Net.V3 SDK → Mailchimp API
@@ -127,7 +127,7 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 
 | Category | Templates | Count |
 |---|---|---|
-| **Accreditation** | AccAwaitingReview, AccBackToEdu, AccReadyForReview, AccReturnToEduProvider, AccCombinedReview, AccInitialReportReady, AccFinalReview, AccAdditionalSubmission, AccAwaitingPanelApproval, AccAwaitingChairApproval, AccCouncilReview, AccEduProviderReview, AccCouncilFinalReview, AccPendingDecision, AccApproved, AccInitialReportReviewEnding, AccAwaitingSiteVisit, AccSiteVisitConfirmed, AccSiteVisitUploadDocument, AccSurvey, AccApplicationSubmited | 21 |
+| **Accreditation** | AccAwaitingReview, AccBackToEdu, AccReadyForReview, AccReturnToEduProvider, AccCombinedReview, AccInitialReportReady, AccFinalReview, AccAdditionalSubmission, AccAwaitingPanelApproval, AccAwaitingChairApproval, AccBoardReview, AccEduProviderReview, AccBoardReview, AccPendingDecision, AccApproved, AccInitialReportReviewEnding, AccAwaitingSiteVisit, AccSiteVisitConfirmed, AccSiteVisitUploadDocument, AccSurvey, AccApplicationSubmited | 21 |
 | **Assessment** | CapabilityScheduleConfirmationRequest, ClinicalScheduleConfirmationRequest, ClinicalWorkshopScheduleConfirmationRequest | 3 |
 | **Identity/Auth** | Register, Welcome, PasswordReset, Mfa, Cst | 5 |
 | **Other** | FileUploadRequest, FileUploadRequestSubmitted | 2 |
@@ -135,11 +135,11 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 
 ### 3.3 Key Technical Constraints
 
-1. **ShareIt.Library dependency**: The `ISendGridService` interface is from ShareIt.Library.SendGrid. Any change to the email sending layer must either work with this interface or replace it (which would require updating 20+ controllers).
+1. **SharedLibrary dependency**: The `ISendGridService` interface is from SharedLibrary.SendGrid. Any change to the email sending layer must either work with this interface or replace it (which would require updating 20+ controllers).
 
-2. **D365 is the system of record**: All domain data (assessment, accreditation, contacts) lives in D365. The portal queries D365 via the ShareIt ORM (`D365.Client()`, `D365.QueryExpression<T>()`).
+2. **D365 is the system of record**: All domain data (assessment, accreditation, contacts) lives in D365. The portal queries D365 via the SharedLib ORM (`D365.Client()`, `D365.QueryExpression<T>()`).
 
-3. **Power Automate integration**: The `ApiBaseController` uses a hardcoded shared secret (`AzurePowerAutomatePhysioPortal`) for Power Automate webhooks. This is a security concern but also means Power Automate flows are part of the email ecosystem.
+3. **Power Automate integration**: The `ApiBaseController` uses a hardcoded shared secret (`AzurePowerAutomatePortal`) for Power Automate webhooks. This is a security concern but also means Power Automate flows are part of the email ecosystem.
 
 4. **No test suite**: The solution has zero test projects. Any email refactoring carries risk without test coverage.
 
@@ -164,7 +164,7 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 #### Cons
 - **Architecturally wrong for this system**: The portal sends emails from within the application code (controllers, utilities). Moving delivery to Mailchimp would require every email-sending call site to be rewritten to call the Mailchimp API instead of SendGrid.
 - **Massive refactoring effort**: 20+ controllers and utility classes use `ISendGridService.SendEmailAsync()`. Each would need to be rewritten.
-- **ShareIt.Library conflict**: The `ISendGridService` interface is from ShareIt.Library. Replacing it means either forking the library or creating a new abstraction layer.
+- **SharedLibrary conflict**: The `ISendGridService` interface is from SharedLibrary. Replacing it means either forking the library or creating a new abstraction layer.
 - **Email activity write-back problem**: The paper itself flags that "assessment email activity would need to be written back into D365." This is a significant integration effort.
 - **Mailchimp transactional email is not designed for this**: Mailchimp's transactional email (Mandrill) is a separate product with different pricing and API. The portal's current Mailchimp integration is for audience/marketing sync, not transactional sending.
 - **Loss of D365 activity history**: The paper flags that "D365 / Send Grid would no longer be the primary email sender" — but the portal doesn't currently write email activity to D365 either. This is a gap, not a feature to preserve.
@@ -175,7 +175,7 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 
 | | Positive | Negative |
 |---|---|---|
-| **Internal** | **Strengths:** Single platform; business-user friendly; strong template builder | **Weaknesses:** Requires rewriting 20+ call sites; ShareIt.Library conflict; Mailchimp transactional is a separate product; doesn't meet BRD FR-004 |
+| **Internal** | **Strengths:** Single platform; business-user friendly; strong template builder | **Weaknesses:** Requires rewriting 20+ call sites; SharedLibrary conflict; Mailchimp transactional is a separate product; doesn't meet BRD FR-004 |
 | **External** | **Opportunities:** Could consolidate email spend; better branding consistency | **Threats:** Mailchimp pricing changes; vendor lock-in; integration reliability concerns |
 
 #### Verdict: **Reject.** High effort, high risk, low architectural fit. Doesn't meet BRD requirements.
@@ -193,7 +193,7 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 - Existing sending infrastructure retained
 
 #### Cons
-- **Template retrieval problem**: The paper itself flags this — "APC would need a process for approved Mailchimp-managed templates or HTML to be retrieved, stored or copied into the systems that continue to send the emails." This is a manual/automated copy process that adds complexity.
+- **Template retrieval problem**: The paper itself flags this — "organisation would need a process for approved Mailchimp-managed templates or HTML to be retrieved, stored or copied into the systems that continue to send the emails." This is a manual/automated copy process that adds complexity.
 - **Doesn't solve the real problem**: The real problem is that templates are static files requiring code deployment. Using Mailchimp as a template library still requires a mechanism to get templates into the portal.
 - **Two systems to manage**: Templates in Mailchimp, sending in SendGrid. This creates a sync problem.
 - **No email activity tracking**: The paper doesn't address how email activity would be tracked or reported.
@@ -229,10 +229,10 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 - **New licensing cost**: Customer Insights (Dynamics 365 Customer Insights - Journeys) is a premium Microsoft product with significant per-user/per-month licensing.
 - **Massive implementation effort**: The paper rates this as "Medium-High" effort, but in reality it would be a multi-month project.
 - **Accreditation data separation problem**: The paper's claim that "accreditation customer insight should remain in the Accreditation Portal" is based on the false premise that accreditation data is not in D365. It IS in D365. This option's core constraint is based on a misunderstanding.
-- **ShareIt.Library conflict**: Customer Insights would need to integrate with the portal's existing D365 connection, which goes through ShareIt.Library's ORM. This is an untested integration path.
+- **SharedLibrary conflict**: Customer Insights would need to integrate with the portal's existing D365 connection, which goes through SharedLibrary's ORM. This is an untested integration path.
 - **Over-engineering**: The portal's email needs are relatively simple — send transactional emails with templates. Customer Insights is a full marketing automation platform.
 - **Migration effort**: Mailchimp campaigns and templates would need migration.
-- **Team skill gap**: The APC team would need to learn Customer Insights administration.
+- **Team skill gap**: The organisation team would need to learn Customer Insights administration.
 - **Vendor lock-in**: Deepens Microsoft dependency.
 - **Timeline mismatch**: The project targets December 2027, but Customer Insights implementation would take 6-12 months. This leaves little time for the rest of the project.
 
@@ -240,7 +240,7 @@ PhysioPortal (ASP.NET Core MVC, .NET 10)
 
 | | Positive | Negative |
 |---|---|---|
-| **Internal** | **Strengths:** Native D365; customer journey visibility; consent management; meets BRD FR-004 | **Weaknesses:** New licensing; team skill gap; complex implementation; based on false accreditation data premise; ShareIt.Library conflict; timeline mismatch |
+| **Internal** | **Strengths:** Native D365; customer journey visibility; consent management; meets BRD FR-004 | **Weaknesses:** New licensing; team skill gap; complex implementation; based on false accreditation data premise; SharedLibrary conflict; timeline mismatch |
 | **External** | **Opportunities:** Long-term customer engagement ecosystem | **Threats:** Microsoft pricing changes; implementation failure risk; over-engineering for actual needs |
 
 #### Verdict: **Reject for now.** This is a strategic direction, not a solution to the immediate template governance problem. The paper's own recommendation acknowledges this — it should be "retained as the preferred strategic direction" but not implemented now. The BRD's timeline (Dec 2027) and the complexity make this a poor fit for the immediate need.
@@ -269,16 +269,16 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
    - Business users can edit templates in SendGrid's UI without code changes
 
 3. **Update call sites** to use the central email service API:
-   - The Assessment Portal (PhysioPortal) calls the central email API instead of `ISendGridService` directly
+   - The Assessment Portal (ThePortal) calls the central email API instead of `ISendGridService` directly
    - The new Accreditation Portal calls the same central email API
    - Power Automate flows call the central email API
    - CRM (D365) can call the central email API via the API area
 
-4. **Abstract the ShareIt.Library dependency**:
+4. **Abstract the SharedLibrary dependency**:
    - Create a portal-owned `IEmailService` interface
    - The central email service implements this interface
    - The portal's controllers depend on `IEmailService`, not `ISendGridService`
-   - This reduces the ShareIt.Library lock-in
+   - This reduces the SharedLibrary lock-in
 
 5. **Keep Mailchimp for marketing only**:
    - The existing Mailchimp integration (audience sync, marketing consent) remains unchanged
@@ -297,14 +297,14 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 | **Vendor lock-in** | ⚠️ 2/5 | ⚠️ 2/5 | ⚠️ 2/5 | ✅ 4/5 |
 | **Meets BRD FR-004 (shared API)** | ❌ 1/5 | ❌ 1/5 | ✅ 5/5 | ✅ 5/5 |
 | **Scales to separated portals** | ⚠️ 2/5 | ⚠️ 2/5 | ✅ 5/5 | ✅ 5/5 |
-| **ShareIt.Library impact** | ❌ 1/5 | ✅ 5/5 | ⚠️ 2/5 | ✅ 5/5 |
+| **SharedLibrary impact** | ❌ 1/5 | ✅ 5/5 | ⚠️ 2/5 | ✅ 5/5 |
 | **Long-term scalability** | ⚠️ 3/5 | ⚠️ 3/5 | ✅ 5/5 | ✅ 5/5 |
 | ****Total Score** | **2.3/5** | **3.0/5** | **3.2/5** | **4.7/5** |
 
 ### 5.3 Implementation Roadmap (6 Months)
 
 **Phase 1 (Months 1-2): Foundation**
-- Create `IEmailService` abstraction to decouple from ShareIt.Library.SendGrid
+- Create `IEmailService` abstraction to decouple from SharedLibrary.SendGrid
 - Create the Central Email Service project (ASP.NET Core API)
 - Create SQL table for template configuration (template name → SendGrid template ID, branding config)
 - Create admin UI for template management
@@ -329,7 +329,7 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 
 | Risk | Mitigation |
 |---|---|
-| **ShareIt.Library.SendGrid interface changes** | Abstract behind `IEmailService` early; the central service owns the SendGrid dependency |
+| **SharedLibrary.SendGrid interface changes** | Abstract behind `IEmailService` early; the central service owns the SendGrid dependency |
 | **SendGrid template migration errors** | Test each template in staging before production; keep old templates as fallback |
 | **Email activity write-back to D365** | Use SendGrid event webhooks; start with sent/delivered events; make it best-effort |
 | **Business user adoption** | Training sessions; simple admin UI; clear documentation |
@@ -350,7 +350,7 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 - The Accreditation Portal separation creates a natural opportunity to build a shared service
 
 ### Weaknesses
-- ShareIt.Library dependency creates vendor lock-in for the email layer
+- SharedLibrary dependency creates vendor lock-in for the email layer
 - No test suite — email refactoring carries risk
 - Static templates require code deployment
 - No email activity tracking currently
@@ -362,12 +362,12 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 - SendGrid Dynamic Templates provide business-user template management
 - Email activity tracking in D365 enables customer journey visibility
 - The central email service can serve both the Assessment and Accreditation portals
-- The `IEmailService` abstraction reduces ShareIt dependency
+- The `IEmailService` abstraction reduces SharedLib dependency
 - Could eventually integrate with Customer Insights if the business case emerges
 - The BRD's timeline (Dec 2027) provides ample time for a well-executed implementation
 
 ### Threats
-- ShareIt.Library could become unmaintained or change its API
+- SharedLibrary could become unmaintained or change its API
 - SendGrid pricing changes
 - Business users may not adopt template management
 - Email deliverability issues (SPF/DKIM/DMARC) if not properly configured
@@ -406,7 +406,7 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 8. **"What is the role of Power Automate in the email ecosystem? Which emails are sent by Power Automate flows vs. the portal? Will Power Automate need to call the central email API?"**
    - The paper mentions Power Automate but doesn't clarify which emails it sends.
 
-9. **"What is the ShareIt.Library relationship? Are we locked into ShareIt's SendGrid wrapper, or can we abstract it? The BRD calls for an in-house API — does this mean we should decouple from ShareIt?"**
+9. **"What is the SharedLibrary relationship? Are we locked into SharedLib's SendGrid wrapper, or can we abstract it? The BRD calls for an in-house API — does this mean we should decouple from SharedLib?"**
    - This is a technical question the solution architect should answer.
 
 10. **"What is the timeline for this project? The IT Delivery Needs document shows December 2027. Is this realistic for the chosen option?"**
@@ -435,7 +435,7 @@ Given the BRD's explicit requirement for an **in-house API endpoint** (FR-004) a
 
 1. **No mention of SendGrid's native template management** — the most obvious solution is completely absent from the paper.
 
-2. **No mention of the ShareIt.Library dependency** — the solution architect's own library is the biggest technical constraint and it's not addressed.
+2. **No mention of the SharedLibrary dependency** — the solution architect's own library is the biggest technical constraint and it's not addressed.
 
 3. **No mention of the Business Requirements Document** — the BRD (April 2026) defines explicit requirements (FR-001 through FR-007) that the paper doesn't address.
 
@@ -473,11 +473,11 @@ The paper's recommended path (Option 2 — Mailchimp templates only) is directio
 - Requires no new licensing (SendGrid is already the provider)
 - Provides business-user template management via SendGrid's UI
 - Enables email activity tracking via SendGrid webhooks
-- Reduces the ShareIt.Library dependency through abstraction
+- Reduces the SharedLibrary dependency through abstraction
 - Supports multi-branding (FR-007)
 
 **Before making any decision, the factual errors in the paper must be corrected and the BRD requirements must be addressed.** The meeting should start by clarifying the actual architecture, the BRD requirements, and the Accreditation Portal separation timeline, then evaluate options against reality.
 
 ---
 
-*This analysis is based on a review of the PhysioPortal codebase, documentation, the Options Paper, the Business Requirements Document, and the IT Delivery Needs document. It is intended to inform the decision meeting and should be validated with the technical team.*
+*This analysis is based on a review of the ThePortal codebase, documentation, the Options Paper, the Business Requirements Document, and the IT Delivery Needs document. It is intended to inform the decision meeting and should be validated with the technical team.*

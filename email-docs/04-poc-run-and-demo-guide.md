@@ -4,20 +4,20 @@
 
 ---
 
-## 0. Prerequisites & Branch Map
+## 0. Prerequisites & Folder Map
 
-- .NET SDK 10.x (installed: 10.0.303)
+- .NET SDK 10.x
 - VS Code with the [REST Client extension](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) for `demo.http`, or any HTTP client
 - Accounts: Mailchimp **14-day Standard trial** (you create today), SendGrid **scoped key** (request Monday — see doc 03 §1a)
 
 ```
-master                              ← clean, untouched
-poc/email-docs                      ← these documents
-poc/email-option2-mailchimp         ← Branch 1: Mailchimp retrieval harness (console app)
-poc/email-option4-central-service   ← Branch 2: Central Email Service (API + tests)
+email-docs/                                        ← these documents
+transactional-email-poc/email-option2-mailchimp    ← Track 1: Mailchimp retrieval harness (console app)
+transactional-email-poc/email-option4-central-service ← Track 2: Central Email Service (API + tests)
 ```
 
-All branches exist locally only. Never push them.
+These folders preserve the original working-branch history inside this standalone repository (see the repository
+`../README.md` for the layout).
 
 ### What YOU must do manually (I cannot click vendor portals)
 
@@ -30,18 +30,17 @@ All branches exist locally only. Never push them.
 
 ---
 
-## 1. Branch 1 — `poc/email-option2-mailchimp`
+## 1. Track 1 — `transactional-email-poc/email-option2-mailchimp`
 
 ### Setup
 ```powershell
-git checkout poc/email-option2-mailchimp
-cd poc/email-option2-mailchimp
+cd ../transactional-email-poc/email-option2-mailchimp
 dotnet restore
 dotnet user-secrets init --project MailchimpPoc.csproj
 dotnet user-secrets set "Mailchimp:ApiKey" "xxxxxxxxxx-us21" --project MailchimpPoc.csproj   # from trial account
 dotnet user-secrets set "Mandrill:ApiKey" "xxxxxxxxxxxxxx" --project MailchimpPoc.csproj     # Transactional > Settings > API keys (demo tier)
 dotnet user-secrets set "SendGrid:ApiKey" "SG.xxxxxxxx" --project MailchimpPoc.csproj        # from scoped key (Monday)
-dotnet user-secrets set "Poc:ToEmail" "you@apc.gov.au" --project MailchimpPoc.csproj
+dotnet user-secrets set "Poc:ToEmail" "you@demo.gov.au" --project MailchimpPoc.csproj
 ```
 
 `Mailchimp:ApiKey` format is `KEY-DATACENTER` (e.g. `abc123-us21`) — the datacenter suffix drives the base URL automatically.
@@ -69,12 +68,11 @@ Fill `FINDINGS.md` as you go — gotchas checklist lives in there and mirrors do
 
 ---
 
-## 2. Branch 2 — `poc/email-option4-central-service`
+## 2. Track 2 — `transactional-email-poc/email-option4-central-service`
 
 ### Setup (after SendGrid key arrives)
 ```powershell
-git checkout poc/email-option4-central-service
-cd poc/email-option4-central-service
+cd ../transactional-email-poc/email-option4-central-service
 dotnet restore
 dotnet user-secrets init --project src/EmailCentral.Api.csproj
 dotnet user-secrets set "SendGrid:ApiKey" "SG.xxxxxxxx" --project src/EmailCentral.Api.csproj
@@ -124,12 +122,12 @@ Run a tunnel (`ngrok http 5080`) → add endpoint `https://<tunnel>/api/v1/event
 | SendGrid 403 on send with correct key | Key lacks Mail Send scope | Regenerate key with scopes from doc 03 |
 | Mandrill status `rejected`, reason `unsigned`/domain error | Domain not authenticated yet (demo tier rule) | Complete Confirm + Authenticate domain steps; verify recipient is at the authenticated domain |
 | Mandrill rejects gmail/external recipient | Demo tier: recipients must be at authenticated domain | Expected behaviour — record reject_reason in FINDINGS as comparison evidence |
-| Port 5080 busy | Another process | `dotnet run --project src -- --urls http://localhost:5090` |
-| Tests fail on first run | Stale obj/ from branch switches | `git clean -xdn` to inspect, then `git clean -xdf` inside the poc folder only |
+| Port 5080 busy | Another process | `dotnet run --project src/EmailCentral.Api.csproj -- --urls http://localhost:5090` |
+| Tests fail on first run | Stale obj/ from older build | `git clean -xdn` to inspect, then `git clean -xdf` inside the POC folder only |
 
 ## 4. Evidence Capture (For the Meeting)
 
-1. Screen recording of both demos (Branch 1 pipeline; Branch 2 money shot) — 5 min total
-2. `FINDINGS.md` from each branch committed on its branch
-3. Scorecard + pricing sheet filled in doc 02 on `poc/email-docs`
+1. Screen recording of both demos (Track 1 pipeline; Track 2 money shot) — 5 min total
+2. `FINDINGS.md` from each POC folder committed here
+3. Scorecard + pricing sheet filled in doc 02 on `email-docs/`
 4. Pre-read email to BA/SA attaching doc 01 + scorecard the day before the meeting

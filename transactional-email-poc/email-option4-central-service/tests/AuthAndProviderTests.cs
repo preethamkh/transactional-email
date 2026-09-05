@@ -35,7 +35,7 @@ public class SendGridPayloadBuilderTests
     {
         var outgoing = new OutgoingEmail(
             "d-123",
-            new Branding("no-reply@apc.example.org", "APC"),
+            new Branding("no-reply@demo.example.org", "Demo"),
             [new Recipient("jane@example.org", "Jane")],
             "Reset your password",
             new Dictionary<string, object?> { ["firstName"] = "Jane" },

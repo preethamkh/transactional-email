@@ -1,5 +1,5 @@
 @mandrillKey = "md-AqbvmlgwdHpbamB91M_zoQ"
-@from = "no-reply@transactional-dev.physiocouncil.com.au"
+@from = "no-reply@transactional-dev.example.com"
 
 ### Ping (validates the API key itself)
 POST https://mandrillapp.com/api/1.0/users/ping2.json

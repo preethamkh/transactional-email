@@ -44,8 +44,8 @@ public class TemplateRegistryTests : IDisposable
     {
         var registry = new TemplateRegistry(_tempFilePath);
 
-        Assert.True(registry.TryGetBranding("apc", out var branding));
-        Assert.Equal("no-reply@apc.example.org", branding.FromEmail);
+        Assert.True(registry.TryGetBranding("demo", out var branding));
+        Assert.Equal("no-reply@demo.example.org", branding.FromEmail);
     }
 
     [Fact]
@@ -56,12 +56,12 @@ public class TemplateRegistryTests : IDisposable
 
     private const string SampleJson = """
         {
-          "brandings": { "apc": { "fromEmail": "no-reply@apc.example.org", "fromName": "APC" } },
+          "brandings": { "demo": { "fromEmail": "no-reply@demo.example.org", "fromName": "Demo" } },
           "templates": [
             { "key": "PasswordReset", "name": "Password reset", "provider": "sendgrid",
-              "providerTemplateId": "d-123", "owner": "Engagement", "defaultBranding": "apc" },
+              "providerTemplateId": "d-123", "owner": "Engagement", "defaultBranding": "demo" },
             { "key": "Welcome", "name": "Welcome", "provider": "sendgrid",
-              "providerTemplateId": "d-456", "owner": "Engagement", "defaultBranding": "apc" }
+              "providerTemplateId": "d-456", "owner": "Engagement", "defaultBranding": "demo" }
           ]
         }
         """;

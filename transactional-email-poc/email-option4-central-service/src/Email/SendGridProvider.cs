@@ -8,7 +8,7 @@ namespace EmailCentral.Api.Email;
 
 /// <summary>
 /// SendGrid REST v3 provider using Dynamic Templates.
-/// Deliberately does NOT use ShareIt.Library.SendGrid: the central service owns the provider dependency,
+/// Deliberately does NOT use SharedLibrary.SendGrid: the central service owns the provider dependency,
 /// which is the seam that keeps the vendor swappable.
 /// </summary>
 public sealed class SendGridProvider : IEmailProvider
