@@ -1,0 +1,15 @@
+# build output (also covered by per-folder .gitignore files)
+**/bin/
+**/obj/
+**/.deploy/
+
+# IDE / user files
+.vs/
+.idea/
+*.user
+*.suo
+
+# local secrets
+.env
+*.local.json
+local.settings.json
