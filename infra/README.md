@@ -1,6 +1,6 @@
 # Terraform Demo Infrastructure
 
-This is an optional personal-subscription deployment. It is not applied by the demo and contains no reference to the APC subscription.
+This is an optional personal-subscription deployment. It is not applied by the demo and contains no reference to any organization subscription.
 
 ```powershell
 az account set --subscription 04a39147-1a6b-4741-b535-77a1e4f91d7d

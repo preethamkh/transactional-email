@@ -85,13 +85,13 @@ Both assume: Mandrill chosen as provider, a **central email service** as the rec
 
 ## Phase 4 — Integration with calling systems (normal: ~2–3 wks; agentic: ~1–2 wks)
 
-### PhysioPortal (existing .NET)
-- Implement the thin `Apc.Email.Client` (calls central API) OR `HttpClient` directly.
+### Existing Portal (.NET)
+- Implement the thin `TransactionalEmail.Client` (calls central API) OR `HttpClient` directly.
 - Facade/DI swap so existing controllers migrate with minimal change.
 - Migrate templates to Mandrill keys.
 
-### Accreditation Portal (new, Nov 2026)
-- Reference `Apc.Email.Client` from day one; same contract.
+### New Portal (new, Nov 2026)
+- Reference `TransactionalEmail.Client` from day one; same contract.
 
 ### Power Automate
 - HTTP action per flow → `POST /api/v1/email/send` with headers.
@@ -143,7 +143,7 @@ Use `AGENT-BUILD-BRIEF.md` as the instruction file. Requirements for agent hando
 2. Change only the assigned folders/projects.
 3. Run `dotnet build` + `dotnet test` after each change.
 4. Never embed credentials or PII.
-5. Never modify D365/Power Automate or the APC subscription.
+5. Never modify D365/Power Automate or the organization subscription.
 6. Report assumptions, unresolved integration work, and any required human decisions.
 
 ---

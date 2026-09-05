@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Apc.Email.Contracts;
-using Apc.Email.Mandrill;
+using TransactionalEmail.Contracts;
+using TransactionalEmail.Mandrill;
 using Azure.Messaging.ServiceBus;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +13,7 @@ if (!string.IsNullOrWhiteSpace(serviceBusConnection))
 var app = builder.Build();
 
 var mandrillKey = builder.Configuration["Mandrill:ApiKey"] ?? Environment.GetEnvironmentVariable("MANDRILL_API_KEY");
-var fromEmail = builder.Configuration["Mandrill:FromEmail"] ?? Environment.GetEnvironmentVariable("FROM_EMAIL") ?? "info@physiocouncil.com.au";
+var fromEmail = builder.Configuration["Mandrill:FromEmail"] ?? Environment.GetEnvironmentVariable("FROM_EMAIL") ?? "noreply@example.com";
 var callerKey = builder.Configuration["ApiKeys:demo"] ?? Environment.GetEnvironmentVariable("DEMO_API_KEY") ?? "demo-key";
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", provider = "mandrill", mode = string.IsNullOrWhiteSpace(mandrillKey) ? "simulation" : "live" }));
@@ -89,9 +89,9 @@ app.MapPost("/api/v1/events/mandrill", (JsonElement events) => Results.Ok(new { 
 app.Run();
 
 static string SupportPage(string callerKey) => """
-<!doctype html><html><head><meta charset="utf-8"><title>APC Email Audit Demo</title>
+<!doctype html><html><head><meta charset="utf-8"><title>Transactional Email Audit Demo</title>
 <style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:0 20px;color:#17202a}button{padding:9px 14px}input{padding:9px;margin-right:8px}table{border-collapse:collapse;width:100%;margin-top:20px}th,td{border-bottom:1px solid #ddd;text-align:left;padding:10px}.tag{font-weight:600;color:#126b45}</style></head>
-<body><h1>APC Transactional Email Audit</h1><p>Search the long-lived audit record, not the provider's short retention window.</p>
+<body><h1>Transactional Email Audit</h1><p>Search the long-lived audit record, not the provider's short retention window.</p>
 <p><input id="search" placeholder="recipient, template, correlation ID"><input id="status" placeholder="status"><button onclick="load()">Search</button></p>
 <table><thead><tr><th>Time</th><th>Source</th><th>Template</th><th>Recipient</th><th>Status</th><th>Correlation</th></tr></thead><tbody id="rows"></tbody></table>
 <script>async function load(){const q=new URLSearchParams();if(search.value)q.set('search',search.value);if(status.value)q.set('status',status.value);const r=await fetch('/api/v1/activity?'+q,{headers:{'X-Api-Key':'__DEMO_KEY__'}});const d=await r.json();rows.innerHTML=d.items.map(x=>`<tr><td>${x.occurredAt}</td><td>${x.sourceSystem}</td><td>${x.templateKey}</td><td>${x.recipient}</td><td class="tag">${x.status}</td><td>${x.correlationId}</td></tr>`).join('')}load()</script></body></html>

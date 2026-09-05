@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
-using Apc.Email.Contracts;
+using TransactionalEmail.Contracts;
 
-namespace Apc.Email.Client;
+namespace TransactionalEmail.Client;
 
 public sealed class EmailApiClient(HttpClient httpClient)
 {

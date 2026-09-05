@@ -13,7 +13,7 @@
 ```powershell
 cd poc/email-architecture-comparison
 dotnet build EmailArchitectureComparison.slnx
-dotnet run --project src/Apc.Email.CentralApi --urls http://localhost:5080
+dotnet run --project src/TransactionalEmail.CentralApi --urls http://localhost:5080
 ```
 
 - Leave the terminal running.
@@ -59,7 +59,7 @@ dotnet run --project src/Apc.Email.CentralApi --urls http://localhost:5080
 - Stop the API (Ctrl+C) OR open a second terminal and run:
   ```powershell
   cd poc/email-architecture-comparison
-  dotnet run --project src/Apc.Email.SharedLibraryDemo
+  dotnet run --project src/TransactionalEmail.SharedLibraryDemo
   ```
   (It will print instructions unless `MANDRILL_API_KEY` and `DEMO_TO_EMAIL` are set.)
 - **Say:** "This is the architect's alternative: each .NET app bundles a shared library that calls Mandrill directly. It works for .NET apps — but D365 and Power Automate cannot load a .NET library, so that path still needs an HTTP endpoint. That's the key point: with a library you often still need an API for D365/PA, so you end up maintaining both."
@@ -87,9 +87,9 @@ Set these as environment variables before running (never commit them):
 
 ```powershell
 $env:MANDRILL_API_KEY = "<rotated-key>"
-$env:FROM_EMAIL = 'info@physiocouncil.com.au'
+$env:FROM_EMAIL = 'noreply@example.com'
 $env:DEMO_TO_EMAIL = '<an-authenticated-recipient>'
-dotnet run --project src/Apc.Email.CentralApi --urls http://localhost:5080
+dotnet run --project src/TransactionalEmail.CentralApi --urls http://localhost:5080
 ```
 
 Then re-run the send blocks. Requires Mandrill templates named `assessment-booked` and `welcome` on the test account.
@@ -98,4 +98,4 @@ Then re-run the send blocks. Requires Mandrill templates named `assessment-booke
 
 ## Optional: hosted demo (free-tier, personal subscription only)
 
-If you want a public URL, see `infra/README.md` and `docs/COST-ANALYSIS.md`. This touches **only** the personal `bonny_kh@hotmail.com` subscription and never the APC subscription. Not required for the decision.
+If you want a public URL, see `infra/README.md` and `docs/COST-ANALYSIS.md`. This touches **only** the personal `bonny_kh@hotmail.com` subscription and never the organization subscription. Not required for the decision.

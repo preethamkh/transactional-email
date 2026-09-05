@@ -13,7 +13,7 @@ The hybrid option is not required as a separate architecture. A typed client lib
 | Need | Technology | Responsibility |
 |---|---|---|
 | Email API | ASP.NET Core Minimal API | Accepts validated email requests and returns a correlation ID |
-| API hosting | Azure App Service | Runs the central API independently of APC applications |
+| API hosting | Azure App Service | Runs the central API independently of organization applications |
 | Gateway | Azure API Management, optional | Stable external URL, authentication policies, throttling, quotas and API documentation |
 | Provider | Mandrill API/SDK | Renders and sends the template email; 25,000-email package remains the provider subscription |
 | Queue | Azure Service Bus queue `email-events` | Buffers email work and prevents the caller depending on worker availability |
@@ -159,9 +159,9 @@ The CRM write-back should be asynchronous and failure-tolerant. A failed Dataver
 
 ## Cost and timeline
 
-The Mandrill 25,000-email package is a fixed provider subscription and should be treated separately from Azure. The exact APC cost cannot be verified from this project because the APC production tenancy was not inspected or accessed. An authorised APC owner should export the current Azure resource list and billing costs before claiming savings or reuse.
+The Mandrill 25,000-email package is a fixed provider subscription and should be treated separately from Azure. The exact organization cost cannot be verified from this project because the organization production tenancy was not inspected or accessed. An authorised organization owner should export the current Azure resource list and billing costs before claiming savings or reuse.
 
-For 7,000–8,000 emails/month, Service Bus and Functions consumption are low-volume costs. The significant Azure costs are the App Service plan, SQL tier, monitoring retention and optional APIM. The personal lab currently uses a Basic App Service plan because its F1 quota was exhausted, Basic SQL, Basic Service Bus and a consumption Function. Production pricing must be confirmed in Azure Pricing Calculator using the APC region, retention and existing-resource reuse.
+For 7,000–8,000 emails/month, Service Bus and Functions consumption are low-volume costs. The significant Azure costs are the App Service plan, SQL tier, monitoring retention and optional APIM. The personal lab currently uses a Basic App Service plan because its F1 quota was exhausted, Basic SQL, Basic Service Bus and a consumption Function. Production pricing must be confirmed in Azure Pricing Calculator using the organization region, retention and existing-resource reuse.
 
 | Phase | Indicative duration | Result |
 |---|---:|---|
@@ -172,7 +172,7 @@ For 7,000–8,000 emails/month, Service Bus and Functions consumption are low-vo
 
 ## Demo result and lab boundary
 
-The personal lab contains `rg-email-architecture-lab` only: App Service, Function App, Service Bus namespace/queue, Storage, SQL `EmailAudit` and monitoring. It is separate from APC. The local demo runs in simulation mode when `MANDRILL_API_KEY` and `ServiceBusConnection` are absent. Azure mode uses the deployed API, queue and Function settings. The switching instructions are in `docs/BUILD-TUTORIAL.md`.
+The personal lab contains `rg-email-architecture-lab` only: App Service, Function App, Service Bus namespace/queue, Storage, SQL `EmailAudit` and monitoring. It is separate from the organization. The local demo runs in simulation mode when `MANDRILL_API_KEY` and `ServiceBusConnection` are absent. Azure mode uses the deployed API, queue and Function settings. The switching instructions are in `docs/BUILD-TUTORIAL.md`.
 
 ## Position for the review
 

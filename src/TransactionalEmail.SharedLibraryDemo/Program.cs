@@ -1,10 +1,10 @@
-﻿using Apc.Email.Contracts;
-using Apc.Email.Mandrill;
+﻿using TransactionalEmail.Contracts;
+using TransactionalEmail.Mandrill;
 using System.Net.Http.Json;
 
 var apiKey = Environment.GetEnvironmentVariable("MANDRILL_API_KEY");
 var toEmail = Environment.GetEnvironmentVariable("DEMO_TO_EMAIL");
-var fromEmail = Environment.GetEnvironmentVariable("FROM_EMAIL") ?? "info@physiocouncil.com.au";
+var fromEmail = Environment.GetEnvironmentVariable("FROM_EMAIL") ?? "noreply@example.com";
 var centralApiUrl = Environment.GetEnvironmentVariable("CENTRAL_API_URL");
 
 if (string.IsNullOrWhiteSpace(toEmail))

@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Apc.Email.Contracts;
+using TransactionalEmail.Contracts;
 
-namespace Apc.Email.Mandrill;
+namespace TransactionalEmail.Mandrill;
 
 public sealed class MandrillEmailSender(HttpClient httpClient, string apiKey, string fromEmail)
 {

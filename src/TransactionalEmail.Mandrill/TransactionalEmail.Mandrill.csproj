@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Apc.Email.Contracts\Apc.Email.Contracts.csproj" />
+    <ProjectReference Include="..\TransactionalEmail.Contracts\TransactionalEmail.Contracts.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

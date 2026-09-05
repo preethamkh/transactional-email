@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/Apc.Email.AuditFunctions/Apc.Email.AuditFunctions.csproj" />
-    <Project Path="src/Apc.Email.CentralApi/Apc.Email.CentralApi.csproj" />
-    <Project Path="src/Apc.Email.Client/Apc.Email.Client.csproj" />
-    <Project Path="src/Apc.Email.Contracts/Apc.Email.Contracts.csproj" />
-    <Project Path="src/Apc.Email.Mandrill/Apc.Email.Mandrill.csproj" />
-    <Project Path="src/Apc.Email.SharedLibraryDemo/Apc.Email.SharedLibraryDemo.csproj" />
+    <Project Path="src/TransactionalEmail.AuditFunctions/TransactionalEmail.AuditFunctions.csproj" />
+    <Project Path="src/TransactionalEmail.CentralApi/TransactionalEmail.CentralApi.csproj" />
+    <Project Path="src/TransactionalEmail.Client/TransactionalEmail.Client.csproj" />
+    <Project Path="src/TransactionalEmail.Contracts/TransactionalEmail.Contracts.csproj" />
+    <Project Path="src/TransactionalEmail.Mandrill/TransactionalEmail.Mandrill.csproj" />
+    <Project Path="src/TransactionalEmail.SharedLibraryDemo/TransactionalEmail.SharedLibraryDemo.csproj" />
   </Folder>
 </Solution>

@@ -197,4 +197,4 @@ flowchart LR
 
 ## Azure learning demo
 
-The personal lab uses the same central-service components in `rg-email-architecture-lab`: App Service API, Service Bus namespace/queue `email-events`, Azure Function, SQL database `EmailAudit`, Storage and monitoring. It is not connected to APC. Use `docs/BUILD-TUTORIAL.md` for Azure mode, local simulation mode, switching commands and cleanup.
+The personal lab uses the same central-service components in `rg-email-architecture-lab`: App Service API, Service Bus namespace/queue `email-events`, Azure Function, SQL database `EmailAudit`, Storage and monitoring. It is not connected to any organization infrastructure. Use `docs/BUILD-TUTORIAL.md` for Azure mode, local simulation mode, switching commands and cleanup.

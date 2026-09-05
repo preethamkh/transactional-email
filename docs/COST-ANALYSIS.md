@@ -1,6 +1,6 @@
 # Cost Analysis: Email Architecture Demo & Production Estimate
 
-This document separates **demo cost** (what you might pay to prove the point) from **production cost** (what the real feature would cost). All Azure references are to the **personal `bonny_kh@hotmail.com` subscription** — nothing here touches the APC `Pay-As-You-Go` subscription.
+This document separates **demo cost** (what you might pay to prove the point) from **production cost** (what the real feature would cost). All Azure references are to the **personal `bonny_kh@hotmail.com` subscription** — nothing here touches the organization `Pay-As-You-Go` subscription.
 
 > Prices are indicative and change. Always confirm with the [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) and set a budget alert before any paid resource.
 
@@ -43,7 +43,7 @@ This document separates **demo cost** (what you might pay to prove the point) fr
 
 ## 3. Production cost estimate (indicative)
 
-These are rough orders of magnitude for the real feature, assuming Mandrill is the chosen provider and APC hosts in Azure. Confirm with Pricing Calculator + your volume.
+These are rough orders of magnitude for the real feature, assuming Mandrill is the chosen provider and the organization hosts in Azure. Confirm with Pricing Calculator + your volume.
 
 | Resource | Purpose | Indicative tier | Cost driver |
 |---|---|---|---|
@@ -67,13 +67,13 @@ These are rough orders of magnitude for the real feature, assuming Mandrill is t
 
 ---
 
-## 4. Separate DB vs. existing APC DB — recommendation
+## 4. Separate DB vs. existing organization DB — recommendation
 
-**Recommendation: a separate email/audit database**, not new tables in the existing APC application DB.
+**Recommendation: a separate email/audit database**, not new tables in the existing organization application DB.
 
-| Consideration | Same APC DB | Separate DB |
+| Consideration | Same organization DB | Separate DB |
 |---|---|---|
-| Coupling | Couples service to APC schema/ownership | Independent ownership |
+| Coupling | Couples service to organization schema/ownership | Independent ownership |
 | Blast radius | Schema changes can affect other features | Isolated |
 | Demo/rollback | Touches shared DB | Safe to destroy |
 | Reporting | Single DB to query | Cross-DB query needed |
@@ -88,4 +88,4 @@ A separate database (or a dedicated schema with clear ownership if DB sprawl is 
 - **To prove the architecture decision:** local demo, **$0**, enough evidence.
 - **To add a public URL:** free-tier F1, ≈ $0, but F1 sleeps (not production-grade).
 - **To run in production:** expect costs for App Service (paid tier), Functions, Service Bus, SQL, Blob, App Insights — plus **Mandrill** fees. Exact numbers need your volume and a Pricing Calculator run.
-- **Never** provision anything against the APC `Pay-As-You-Go` subscription for this demo.
+- **Never** provision anything against the organization `Pay-As-You-Go` subscription for this demo.

@@ -22,12 +22,12 @@ The demo also needed to show: nested (2D/3D) data handling, an audit/support UI,
 
 ```powershell
 dotnet new sln --name EmailArchitectureComparison --output poc/email-architecture-comparison --format slnx
-dotnet new classlib --name Apc.Email.Contracts     --output poc/email-architecture-comparison/src/Apc.Email.Contracts
-dotnet new classlib --name Apc.Email.Client        --output poc/email-architecture-comparison/src/Apc.Email.Client
-dotnet new classlib --name Apc.Email.Mandrill      --output poc/email-architecture-comparison/src/Apc.Email.Mandrill
-dotnet new web      --name Apc.Email.CentralApi    --output poc/email-architecture-comparison/src/Apc.Email.CentralApi
-dotnet new console  --name Apc.Email.SharedLibraryDemo --output poc/email-architecture-comparison/src/Apc.Email.SharedLibraryDemo
-dotnet new classlib --name Apc.Email.AuditFunctions --output poc/email-architecture-comparison/src/Apc.Email.AuditFunctions
+dotnet new classlib --name TransactionalEmail.Contracts     --output poc/email-architecture-comparison/src/TransactionalEmail.Contracts
+dotnet new classlib --name TransactionalEmail.Client        --output poc/email-architecture-comparison/src/TransactionalEmail.Client
+dotnet new classlib --name TransactionalEmail.Mandrill      --output poc/email-architecture-comparison/src/TransactionalEmail.Mandrill
+dotnet new web      --name TransactionalEmail.CentralApi    --output poc/email-architecture-comparison/src/TransactionalEmail.CentralApi
+dotnet new console  --name TransactionalEmail.SharedLibraryDemo --output poc/email-architecture-comparison/src/TransactionalEmail.SharedLibraryDemo
+dotnet new classlib --name TransactionalEmail.AuditFunctions --output poc/email-architecture-comparison/src/TransactionalEmail.AuditFunctions
 ```
 
 ### Step 2 — Wire project references
@@ -37,11 +37,11 @@ dotnet new classlib --name Apc.Email.AuditFunctions --output poc/email-architect
 - `Client` → no Mandrill reference (it only calls HTTP)
 
 ```powershell
-dotnet sln EmailArchitectureComparison.slnx add src/Apc.Email.Contracts/... src/Apc.Email.Client/...
-dotnet add src/Apc.Email.Client/Apc.Email.Client.csproj reference src/Apc.Email.Contracts/...
-dotnet add src/Apc.Email.Mandrill/Apc.Email.Mandrill.csproj reference src/Apc.Email.Contracts/...
-dotnet add src/Apc.Email.CentralApi/Apc.Email.CentralApi.csproj reference src/Apc.Email.Contracts/... src/Apc.Email.Mandrill/...
-dotnet add src/Apc.Email.SharedLibraryDemo/... reference src/Apc.Email.Contracts/... src/Apc.Email.Mandrill/...
+dotnet sln EmailArchitectureComparison.slnx add src/TransactionalEmail.Contracts/... src/TransactionalEmail.Client/...
+dotnet add src/TransactionalEmail.Client/TransactionalEmail.Client.csproj reference src/TransactionalEmail.Contracts/...
+dotnet add src/TransactionalEmail.Mandrill/TransactionalEmail.Mandrill.csproj reference src/TransactionalEmail.Contracts/...
+dotnet add src/TransactionalEmail.CentralApi/TransactionalEmail.CentralApi.csproj reference src/TransactionalEmail.Contracts/... src/TransactionalEmail.Mandrill/...
+dotnet add src/TransactionalEmail.SharedLibraryDemo/... reference src/TransactionalEmail.Contracts/... src/TransactionalEmail.Mandrill/...
 ```
 
 ### Step 3 — Define shared contracts (`Contracts`)
@@ -114,9 +114,9 @@ A REST Client script (VS Code extension) that lets you click-and-run:
 ```mermaid
 flowchart LR
     HTTP[demo.http / REST Client] --> API[CentralApi]
-    Client[Apc.Email.Client] --> API
-    API --> Mandrill[Apc.Email.Mandrill]
-    Console[Apc.Email.SharedLibraryDemo] --> Mandrill
+    Client[TransactionalEmail.Client] --> API
+    API --> Mandrill[TransactionalEmail.Mandrill]
+    Console[TransactionalEmail.SharedLibraryDemo] --> Mandrill
     Mandrill --> Provider[Mandrill API]
     API --> Audit[(In-memory audit + UI)]
     Func[AuditFunctions worker] -. future .-> API
@@ -124,7 +124,7 @@ flowchart LR
 
 - The **central path** goes through the API.
 - The **shared-library path** goes straight from the console app to Mandrill.
-- The **thin client** (`Apc.Email.Client`) is the hybrid: it calls the API, so the portals get typed helpers but Mandrill stays behind one service.
+- The **thin client** (`TransactionalEmail.Client`) is the hybrid: it calls the API, so the portals get typed helpers but Mandrill stays behind one service.
 
 ---
 
@@ -149,7 +149,7 @@ flowchart LR
 From the comparison directory, leave `ServiceBusConnection` unset and start the API:
 
 ```powershell
-dotnet run --project src\Apc.Email.CentralApi
+dotnet run --project src\TransactionalEmail.CentralApi
 ```
 
 The API runs in simulation mode and keeps audit rows in memory. Use `demo.http` against `http://localhost:5080`. Stop the process with `Ctrl+C`.
@@ -161,7 +161,7 @@ The deployed API is `https://email-arch-lab-api.azurewebsites.net`. Send the sam
 To configure the provider secret without committing it:
 
 ```powershell
-az webapp config appsettings set --resource-group rg-email-architecture-lab --name email-arch-lab-api --settings Mandrill__ApiKey='<rotated-key>' Mandrill__FromEmail='info@physiocouncil.com.au'
+az webapp config appsettings set --resource-group rg-email-architecture-lab --name email-arch-lab-api --settings Mandrill__ApiKey='<rotated-key>' Mandrill__FromEmail='noreply@example.com'
 ```
 
 Inspect the asynchronous hand-off in Azure Portal: `rg-email-architecture-lab` -> `emailarchlabnamespace` -> `Queues` -> `email-events`. A message count that returns to zero indicates the Function has consumed it; failed messages appear in the dead-letter subqueue. View Function logs under `email-arch-lab-fn` -> `Log stream`.
@@ -174,7 +174,7 @@ To run the API locally while using Azure Service Bus and SQL, set the connection
 $env:ServiceBusConnection = '<service-bus-connection-string>'
 $env:EmailAuditQueue = 'email-events'
 $env:Mandrill__ApiKey = '<rotated-key>'
-dotnet run --project src\Apc.Email.CentralApi
+dotnet run --project src\TransactionalEmail.CentralApi
 ```
 
 To return to local simulation, close that PowerShell session or run `$env:ServiceBusConnection = $null` and restart the API. Azure App Service settings are independent of local environment variables.

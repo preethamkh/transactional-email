@@ -1,4 +1,4 @@
-namespace Apc.Email.Contracts;
+namespace TransactionalEmail.Contracts;
 
 public sealed record EmailRecipient(string Email, string? Name = null);
 

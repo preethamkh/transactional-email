@@ -1,8 +1,8 @@
-# Agent Build Brief: APC Transactional Email
+# Agent Build Brief: Transactional Email Service
 
 ## Objective
 
-Build a production-ready Mandrill-backed transactional email capability for APC without embedding Mandrill credentials or provider-specific code in calling systems.
+Build a production-ready Mandrill-backed transactional email capability without embedding Mandrill credentials or provider-specific code in calling systems.
 
 ## Required outcome
 
@@ -18,7 +18,7 @@ Build a production-ready Mandrill-backed transactional email capability for APC 
 
 ## Constraints
 
-- Never modify the APC Azure subscription without explicit approval.
+- Never modify the organization Azure subscription without explicit approval.
 - Never commit secrets, tokens, API keys or personal data.
 - Keep Mailchimp marketing retrieval separate from Mandrill transactional sending.
 - Do not add email audit tables to an unrelated application database.
@@ -43,4 +43,4 @@ Build a production-ready Mandrill-backed transactional email capability for APC 
 - Integration tests using a fake provider and ephemeral database.
 - Manual smoke test using a non-production Mandrill template and authenticated recipient.
 - Failure test for timeout, rejected recipient and duplicate idempotency key.
-- No tests or scripts may depend on APC production data.
+- No tests or scripts may depend on production data.

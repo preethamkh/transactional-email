@@ -1,12 +1,12 @@
 using System.Net;
 using System.Data;
 using System.Text.Json;
-using Apc.Email.Contracts;
+using TransactionalEmail.Contracts;
 using Microsoft.Data.SqlClient;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 
-namespace Apc.Email.AuditFunctions;
+namespace TransactionalEmail.AuditFunctions;
 
 public sealed class AuditFunctions
 {

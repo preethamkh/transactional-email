@@ -2,7 +2,7 @@
 
 ## Decision context
 
-The original Mailchimp Marketing API retrieval option was not reliable for builder HTML. Mandrill is now the selected provider. The remaining decision is how APC-owned applications should use Mandrill:
+The original Mailchimp Marketing API retrieval option was not reliable for builder HTML. Mandrill is now the selected provider. The remaining decision is how organization-owned applications should use Mandrill:
 
 - **Shared library:** each .NET application sends directly through a common package.
 - **Central email service:** all callers use one HTTP API; the service sends through Mandrill.
@@ -12,8 +12,8 @@ The original Mailchimp Marketing API retrieval option was not reliable for build
 
 ```mermaid
 flowchart LR
-  P[PhysioPortal] --> L[APC.Email NuGet]
-  A[Accreditation Portal] --> L2[APC.Email NuGet]
+  P[Portal] --> L[TransactionalEmail NuGet]
+  A[Accreditation Portal] --> L2[TransactionalEmail NuGet]
   D[D365] --> H[HTTP adapter/API]
   PA[Power Automate] --> H
   L --> M[Mandrill]
@@ -28,7 +28,7 @@ The shared-library approach is valid, but D365 and Power Automate still need an 
 
 ```mermaid
 flowchart LR
-  P[PhysioPortal] --> API[Central Email API]
+  P[Portal] --> API[Central Email API]
   A[Accreditation Portal] --> API
   D[D365] --> API
   PA[Power Automate] --> API
@@ -54,7 +54,7 @@ The demo converts nested domain data into flat Mandrill merge variables such as 
 
 ## Data and logging
 
-The provider is not the system of record for audit. Store an APC-owned record containing:
+The provider is not the system of record for audit. Store an organization-owned record containing:
 
 - Correlation ID and idempotency key
 - Source system and environment
@@ -81,7 +81,7 @@ Store message bodies only if there is a confirmed legal/support requirement. The
 | API gateway | Not needed | APIM only if governance, quotas or external consumers require it |
 | Infrastructure | Terraform included, not applied | Terraform per environment |
 
-Do not add these tables to the existing APC application database. A separate email/audit database gives the service independent ownership and avoids coupling the demonstration or future service to the APC schema.
+Do not add these tables to the existing organization application database. A separate email/audit database gives the service independent ownership and avoids coupling the demonstration or future service to the organization schema.
 
 ### Template mapping and redeployment
 
@@ -135,7 +135,7 @@ No D365 or Power Automate implementation is included in this repository.
 ### Shared library path
 
 1. Define versioned contracts and template-key ownership.
-2. Implement APC-owned Mandrill adapter and configuration.
+2. Implement organization-owned Mandrill adapter and configuration.
 3. Package the library and consume it separately in each .NET application.
 4. Build the HTTP adapter required by D365 and Power Automate.
 5. Define a common audit event contract and central ingestion/store.
@@ -151,7 +151,7 @@ No D365 or Power Automate implementation is included in this repository.
 5. Add Function consumers for provider events, archive and D365 write-back.
 6. Add Entra-authenticated support UI and filtered search.
 7. Deploy with Terraform to isolated dev/test/prod environments.
-8. Onboard PhysioPortal, Power Automate, D365 and Accreditation incrementally.
+8. Onboard Portal, Power Automate, D365 and Accreditation incrementally.
 
 The database-backed template registry and administration screen are optional follow-on work, justified only if authorised non-developers need to add mappings, or if template versioning, approval and multi-provider configuration must be managed at runtime.
 
@@ -165,4 +165,4 @@ The production request flow is therefore: caller -> optional APIM -> central ema
 
 ### Agent-assisted delivery plan
 
-Use the agent brief in `AGENT-BUILD-BRIEF.md`. Require agents to inspect the repository first, change only assigned folders, run tests/builds, never use APC credentials, and report assumptions and unresolved integration work.
+Use the agent brief in `AGENT-BUILD-BRIEF.md`. Require agents to inspect the repository first, change only assigned folders, run tests/builds, never use organization credentials, and report assumptions and unresolved integration work.

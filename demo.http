@@ -1,6 +1,6 @@
 @host = http://localhost:5080
 @apiKey = demo-key
-@recipient = preetham.kh@physiocouncil.com.au
+@recipient = user@example.com
 @correlation = meeting-demo-001
 
 ### 1. Service health. 
